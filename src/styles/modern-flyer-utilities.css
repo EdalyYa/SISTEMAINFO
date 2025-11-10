@@ -1,0 +1,360 @@
+/* Modern Flyer Design System - Utility Classes */
+
+/* === TYPOGRAPHY UTILITIES === */
+
+/* Heading Styles */
+.flyer-heading-xl {
+  font-family: var(--font-secondary);
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--flyer-text-primary);
+}
+
+.flyer-heading-lg {
+  font-family: var(--font-secondary);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--flyer-text-primary);
+}
+
+.flyer-heading-md {
+  font-family: var(--font-secondary);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  color: var(--flyer-text-primary);
+}
+
+.flyer-heading-sm {
+  font-family: var(--font-secondary);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  color: var(--flyer-text-primary);
+}
+
+/* Body Text Styles */
+.flyer-body-lg {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-loose);
+  color: var(--flyer-text-primary);
+}
+
+.flyer-body-md {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-loose);
+  color: var(--flyer-text-primary);
+}
+
+.flyer-body-sm {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-relaxed);
+  color: var(--flyer-text-secondary);
+}
+
+/* Utility Text Styles */
+.flyer-caption {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  color: var(--flyer-text-muted);
+}
+
+.flyer-overline {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-widest);
+  color: var(--flyer-text-secondary);
+}
+
+.flyer-code {
+  font-family: var(--font-accent);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--color-elegant-gray-100);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  color: var(--flyer-text-primary);
+}
+
+/* === COLOR UTILITIES === */
+
+/* Background Colors */
+.flyer-bg-primary { background-color: var(--flyer-primary); }
+.flyer-bg-secondary { background-color: var(--flyer-secondary); }
+.flyer-bg-accent { background-color: var(--flyer-accent); }
+.flyer-bg-surface { background-color: var(--flyer-surface); }
+.flyer-bg-background { background-color: var(--flyer-background); }
+
+/* Text Colors */
+.flyer-text-primary { color: var(--flyer-text-primary); }
+.flyer-text-secondary { color: var(--flyer-text-secondary); }
+.flyer-text-muted { color: var(--flyer-text-muted); }
+.flyer-text-inverse { color: var(--flyer-text-inverse); }
+.flyer-text-accent { color: var(--flyer-accent); }
+
+/* Border Colors */
+.flyer-border-primary { border-color: var(--flyer-primary); }
+.flyer-border-secondary { border-color: var(--flyer-secondary); }
+.flyer-border-accent { border-color: var(--flyer-accent); }
+.flyer-border-muted { border-color: var(--color-elegant-gray-200); }
+
+/* === SPACING UTILITIES === */
+
+/* Margin Utilities */
+.flyer-m-0 { margin: var(--spacing-0); }
+.flyer-m-1 { margin: var(--spacing-1); }
+.flyer-m-2 { margin: var(--spacing-2); }
+.flyer-m-3 { margin: var(--spacing-3); }
+.flyer-m-4 { margin: var(--spacing-4); }
+.flyer-m-6 { margin: var(--spacing-6); }
+.flyer-m-8 { margin: var(--spacing-8); }
+.flyer-m-12 { margin: var(--spacing-12); }
+.flyer-m-16 { margin: var(--spacing-16); }
+
+/* Padding Utilities */
+.flyer-p-0 { padding: var(--spacing-0); }
+.flyer-p-1 { padding: var(--spacing-1); }
+.flyer-p-2 { padding: var(--spacing-2); }
+.flyer-p-3 { padding: var(--spacing-3); }
+.flyer-p-4 { padding: var(--spacing-4); }
+.flyer-p-6 { padding: var(--spacing-6); }
+.flyer-p-8 { padding: var(--spacing-8); }
+.flyer-p-12 { padding: var(--spacing-12); }
+.flyer-p-16 { padding: var(--spacing-16); }
+
+/* Gap Utilities */
+.flyer-gap-1 { gap: var(--spacing-1); }
+.flyer-gap-2 { gap: var(--spacing-2); }
+.flyer-gap-3 { gap: var(--spacing-3); }
+.flyer-gap-4 { gap: var(--spacing-4); }
+.flyer-gap-6 { gap: var(--spacing-6); }
+.flyer-gap-8 { gap: var(--spacing-8); }
+
+/* === LAYOUT UTILITIES === */
+
+/* Modern Grid System */
+.flyer-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--flyer-grid-columns), 1fr);
+  gap: var(--flyer-grid-gutter);
+}
+
+.flyer-grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
+.flyer-grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.flyer-grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.flyer-grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+.flyer-grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
+.flyer-grid-cols-12 { grid-template-columns: repeat(12, 1fr); }
+
+/* Column Spans */
+.flyer-col-span-1 { grid-column: span 1; }
+.flyer-col-span-2 { grid-column: span 2; }
+.flyer-col-span-3 { grid-column: span 3; }
+.flyer-col-span-4 { grid-column: span 4; }
+.flyer-col-span-6 { grid-column: span 6; }
+.flyer-col-span-12 { grid-column: span 12; }
+
+/* Flexbox Utilities */
+.flyer-flex { display: flex; }
+.flyer-flex-col { flex-direction: column; }
+.flyer-flex-row { flex-direction: row; }
+.flyer-items-center { align-items: center; }
+.flyer-items-start { align-items: flex-start; }
+.flyer-items-end { align-items: flex-end; }
+.flyer-justify-center { justify-content: center; }
+.flyer-justify-between { justify-content: space-between; }
+.flyer-justify-start { justify-content: flex-start; }
+.flyer-justify-end { justify-content: flex-end; }
+
+/* === VISUAL UTILITIES === */
+
+/* Border Radius */
+.flyer-rounded-none { border-radius: var(--radius-none); }
+.flyer-rounded-sm { border-radius: var(--radius-sm); }
+.flyer-rounded { border-radius: var(--radius-base); }
+.flyer-rounded-md { border-radius: var(--radius-md); }
+.flyer-rounded-lg { border-radius: var(--radius-lg); }
+.flyer-rounded-xl { border-radius: var(--radius-xl); }
+.flyer-rounded-full { border-radius: var(--radius-full); }
+
+/* Shadows */
+.flyer-shadow-none { box-shadow: none; }
+.flyer-shadow-sm { box-shadow: var(--shadow-sm); }
+.flyer-shadow { box-shadow: var(--shadow-base); }
+.flyer-shadow-md { box-shadow: var(--shadow-md); }
+.flyer-shadow-lg { box-shadow: var(--shadow-lg); }
+.flyer-shadow-xl { box-shadow: var(--shadow-xl); }
+.flyer-shadow-2xl { box-shadow: var(--shadow-2xl); }
+
+/* Modern Gradients */
+.flyer-gradient-tech {
+  background: linear-gradient(135deg, var(--color-tech-blue-500) 0%, var(--color-tech-blue-600) 100%);
+}
+
+.flyer-gradient-professional {
+  background: linear-gradient(135deg, var(--color-professional-purple-500) 0%, var(--color-professional-purple-600) 100%);
+}
+
+.flyer-gradient-modern {
+  background: linear-gradient(135deg, var(--color-modern-green-500) 0%, var(--color-modern-green-600) 100%);
+}
+
+.flyer-gradient-elegant {
+  background: linear-gradient(135deg, var(--color-elegant-gray-600) 0%, var(--color-elegant-gray-700) 100%);
+}
+
+/* === INTERACTIVE UTILITIES === */
+
+/* Hover Effects */
+.flyer-hover-lift {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.flyer-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.flyer-hover-scale {
+  transition: transform var(--transition-base);
+}
+
+.flyer-hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.flyer-hover-opacity {
+  transition: opacity var(--transition-base);
+}
+
+.flyer-hover-opacity:hover {
+  opacity: var(--flyer-hover-opacity);
+}
+
+/* Focus States */
+.flyer-focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color var(--transition-fast);
+}
+
+.flyer-focus-ring:focus {
+  outline-color: var(--flyer-primary);
+}
+
+/* === ANIMATION UTILITIES === */
+
+/* Fade Animations */
+@keyframes flyer-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes flyer-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes flyer-fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation Classes */
+.flyer-animate-fade-in {
+  animation: flyer-fade-in var(--transition-base) ease-out;
+}
+
+.flyer-animate-fade-in-up {
+  animation: flyer-fade-in-up var(--transition-slow) ease-out;
+}
+
+.flyer-animate-fade-in-scale {
+  animation: flyer-fade-in-scale var(--transition-base) ease-out;
+}
+
+/* === RESPONSIVE UTILITIES === */
+
+/* Container */
+.flyer-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--flyer-container-padding);
+  padding-right: var(--flyer-container-padding);
+}
+
+@media (min-width: 640px) {
+  .flyer-container { max-width: 640px; }
+}
+
+@media (min-width: 768px) {
+  .flyer-container { max-width: 768px; }
+}
+
+@media (min-width: 1024px) {
+  .flyer-container { max-width: 1024px; }
+}
+
+@media (min-width: 1280px) {
+  .flyer-container { max-width: 1280px; }
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  .flyer-heading-xl { font-size: var(--font-size-3xl); }
+  .flyer-heading-lg { font-size: var(--font-size-2xl); }
+  .flyer-heading-md { font-size: var(--font-size-xl); }
+}
+
+/* === PRINT UTILITIES === */
+
+@media print {
+  .flyer-print-hidden { display: none !important; }
+  .flyer-print-visible { display: block !important; }
+  
+  /* Optimize colors for print */
+  .flyer-gradient-tech,
+  .flyer-gradient-professional,
+  .flyer-gradient-modern,
+  .flyer-gradient-elegant {
+    background: var(--color-elegant-gray-100) !important;
+    color: var(--color-elegant-gray-900) !important;
+  }
+  
+  /* Remove shadows for print */
+  .flyer-shadow,
+  .flyer-shadow-sm,
+  .flyer-shadow-md,
+  .flyer-shadow-lg,
+  .flyer-shadow-xl,
+  .flyer-shadow-2xl {
+    box-shadow: none !important;
+  }
+}

@@ -1,0 +1,72 @@
+INFOUNA – Instrucciones de uso (entorno local)
+
+Requisitos previos
+- Node.js 18 o superior y npm.
+- MySQL 8 en local (Laragon/XAMPP/WAMP o MySQL standalone).
+- Opcional: phpMyAdmin para importar el esquema.
+
+1) Base de datos local
+- Crea una base de datos (ejemplo: `infouna`).
+- Importa el esquema desde `backend/schema_complete.sql` usando phpMyAdmin o el cliente MySQL.
+  Ejemplo en PowerShell: `mysql -h 127.0.0.1 -u root -p infouna < backend\schema_complete.sql`
+
+2) Configuración del backend
+- Copia `backend/.env.example` a `backend/.env`.
+- Ajusta variables mínimas:
+  - `DB_HOST=127.0.0.1`
+  - `DB_USER=root`
+  - `DB_PASSWORD=tu_password`
+  - `DB_NAME=infouna`
+  - `CORS_ORIGINS=http://localhost:5173`
+  - Opcional: `NEWS_API_KEY=tu_clave_de_newsapi`
+
+3) Arrancar el backend
+- En consola: `cd backend`
+- Instalar dependencias: `npm install`
+- Ejecutar en desarrollo: `npm run dev`
+- El backend queda en `http://localhost:4001` (por defecto) y expone `/api/...`.
+
+4) Arrancar el frontend
+- En la raíz del proyecto: `npm install`
+- Ejecutar: `npm run dev`
+- Accede a `http://localhost:5173` para el sitio público.
+- La ruta `/panel/login` es el acceso al panel administrativo.
+
+5) Acceso de administrador
+- Endpoint de login: `POST /api/auth/login` con `username` o `email` y `password`.
+- El sistema crea/actualiza un usuario admin por defecto en el arranque (si la tabla existe):
+  - Usuario: `infoadmin`
+  - Password: `infouna2025`
+- Tras el login, usa el token (Bearer) para llamar rutas de administración.
+
+6) Uso principal (público)
+- Cursos: navegar por catálogo (`/api/cursos`).
+- Horarios: consultar horarios vigentes (`/api/horarios`).
+- Documentos/Descargables: ver y descargar.
+- Noticias: sección de novedades (`/api/news`).
+- Matriculación: formulario y contacto.
+- Certificados: verificación pública.
+- Promociones: modal aparece automáticamente si hay campañas activas.
+
+7) Uso principal (administración)
+- Programas/Cursos/Módulos: crear, editar, eliminar; subir imagen de curso.
+- Biblioteca de documentos: subir archivos, asignar categorías y etiquetas, controlar visibilidad.
+- Certificados: gestionar diseños, generar previews y PDFs, emisión individual.
+- Certificados masivos: flujo de carga y generación por lote.
+- Horarios: alta/edición/baja y publicación.
+- Matrículas y Docentes: administración completa.
+- Promociones: crear campaña, definir cronograma, revisar estadísticas.
+
+8) Estructura de archivos relevante
+- `backend/` – API (Express), rutas y servicios.
+- `src/` – Frontend (Vite + React).
+- `uploads/` – archivos subidos (cursos, documentos, certificados masivos).
+
+9) Consejos y solución de problemas
+- Si el frontend no puede llamar al backend, verifica `CORS_ORIGINS` y el puerto.
+- Si aparecen listas vacías, revisa que la BD tenga datos (tablas y registros).
+- Para NewsAPI real, coloca `NEWS_API_KEY`; de lo contrario verás contenido de respaldo.
+
+10) Producción (opcional)
+- Este proyecto está pensado para uso local. Si más adelante se desea publicar, usar una instancia MySQL accesible y configurar las variables de entorno en el servidor.
+

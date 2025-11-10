@@ -1,0 +1,70 @@
+INFOUNA – Funcionalidades del Sistema
+
+1) Sitio institucional (frontend)
+- Páginas públicas: Inicio, Nosotros, Historia, Misión y Visión, Equipo, FAQ, Redes, Trámites, Documentos, Descargables, Calendario.
+- Secciones académicas: Programas, Módulos, Cursos, Cursos libres, Detalle de curso, Horarios.
+- Matriculación: página de inscripción y contacto.
+- Noticias tecnológicas: integración con NewsAPI (opcional). Si no hay clave, se muestra contenido de respaldo (fallback).
+- Modal promocional: muestra campañas/promociones activas; si no hay, informa “No hay promociones activas”.
+
+2) Certificados
+- Emisión de certificados individuales y masivos.
+- Gestión de diseños de certificados (plantillas con elementos y recursos: fondo y logos).
+- Generación de PDF (preview y archivo final).
+- Verificación pública de certificados por datos del estudiante/código.
+- Descarga y visualización de certificados.
+
+3) Biblioteca de documentos
+- Carga de documentos (PDF, DOCX, imágenes, etc.).
+- Vista previa en PDF (conversión automática cuando es posible).
+- Clasificación por categorías y etiquetas.
+- Control de publicación/visibilidad.
+
+4) Gestión académica (administración)
+- Programas: CRUD.
+- Cursos y Módulos: creación, edición, eliminación, subida de imágenes de curso.
+- Cursos libres: catálogo y administración.
+- Horarios: CRUD y visualización pública.
+- Matrículas: registro y administración.
+- Docentes: alta, edición, baja.
+- Reclamaciones: recepción y seguimiento.
+- Cifras y logros: sección informativa.
+
+5) Promociones (modal promocional)
+- Administración de campañas/promos.
+- Cronograma por promoción (fechas y actividades).
+- Métricas básicas de interacción.
+
+6) Autenticación y seguridad
+- Login de administrador vía `/api/auth/login` (JWT).
+- Middleware de autenticación para proteger rutas de administración.
+- Roles (admin) para acciones sensibles.
+- CORS configurable para entornos de desarrollo y producción.
+
+7) API (endpoints principales)
+- Público:
+  - `GET /api/cursos` – catálogo de cursos activos.
+  - `GET /api/horarios` – horarios.
+  - `GET /api/documentos/public` y variantes – biblioteca pública.
+  - `GET /api/certificados-publicos/...` – verificación/consulta pública de certificados.
+  - `GET /api/news` – noticias tecnológicas (requiere `NEWS_API_KEY` para datos reales; con fallback).
+  - `GET /api/modal-promocional/...` – datos del modal promocional (público).
+- Administración (protegidas por token):
+  - `/admin/programas`, `/admin/cursos`, `/admin/modulos`, `/admin/matriculas`, `/admin/docentes` – CRUDs.
+  - `/api/documentos/admin/...` – gestión de biblioteca.
+  - `/api/modal-promocional/admin/...` – gestión de campañas y cronograma.
+  - `/admin/certificados` y `/admin/certificados/disenos` – certificados y diseños.
+  - `/api/certificados-masivos/...` – flujo de carga/plantillas y generación en lote.
+  - `/admin/users` – gestión de usuarios.
+
+8) Archivos y almacenamiento
+- Subidas locales: imágenes de cursos, documentos y archivos de certificados masivos.
+- Carpeta `uploads/` con subcarpetas específicas (por ejemplo, `uploads/certificados_masivos`).
+
+9) Configuración
+- Variables de entorno en `backend/.env` para MySQL, CORS y NewsAPI.
+- Pool MySQL local por defecto (`host=127.0.0.1`, `user=root`, `db=infouna`).
+
+10) Integración con panel
+- Redirección automática de `/admin` al login del panel (`/panel/login`) cuando se accede desde el frontend en desarrollo.
+

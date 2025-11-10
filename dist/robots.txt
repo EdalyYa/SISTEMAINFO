@@ -1,0 +1,13 @@
+# robots.txt para el portal público de INFOUNA
+# Bloquea la indexación del panel administrativo
+
+User-agent: *
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin/*
+
+# Permite el resto del sitio público
+Allow: /
+
+# Opcional: especificar sitemap si existe
+# Sitemap: https://www.infouna.edu.pe/sitemap.xml

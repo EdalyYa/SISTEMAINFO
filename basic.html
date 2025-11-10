@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeighborGoods App Reviews</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+        }
+        
+        .student-info {
+            text-align: right;
+            color: #555;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .student-info strong {
+            color: #764ba2;
+            font-size: 1.05em;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1em;
+            opacity: 0.95;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-top: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .section li {
+            padding: 4px 0;
+            padding-left: 18px;
+            position: relative;
+            color: #333;
+            line-height: 1.4;
+            font-size: 0.85em;
+        }
+        
+        .section li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .reviewer-section {
+            background: linear-gradient(145deg, #e8f4f8, #d4e9f2);
+            border-top: 4px solid #764ba2;
+        }
+        
+        .reviewer-section h2 {
+            color: #764ba2;
+        }
+        
+        .reviewer-name {
+            font-weight: bold;
+            color: #764ba2;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            display: block;
+            background: rgba(118, 75, 162, 0.1);
+            padding: 5px 8px;
+            border-radius: 5px;
+        }
+        
+        .quote {
+            font-style: italic;
+            color: #444;
+            margin-top: 8px;
+            padding: 8px;
+            background: white;
+            border-left: 3px solid #764ba2;
+            font-size: 0.8em;
+            border-radius: 5px;
+            line-height: 1.3;
+        }
+        
+        .benefits {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px;
+            border-radius: 10px;
+            border-top: none;
+        }
+        
+        .benefits h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 1.3em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        
+        .benefit-card {
+            background: rgba(255,255,255,0.2);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.2s;
+        }
+        
+        .benefit-card:hover {
+            transform: translateY(-3px);
+            background: rgba(255,255,255,0.25);
+        }
+        
+        .benefit-card .icon {
+            font-size: 2.2em;
+            margin-bottom: 8px;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        .benefit-card h3 {
+            color: white;
+            margin: 5px 0;
+            font-size: 0.95em;
+            font-weight: bold;
+        }
+        
+        .benefit-card p {
+            font-size: 0.75em;
+            opacity: 0.95;
+            line-height: 1.3;
+        }
+
+        .tall {
+            grid-row: span 2;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="student-info">
+            <strong>Student:</strong> Cliver Wimar Vilca Tinta
+        </div>
+        
+        <div class="header">
+            <h1>📱 NeighborGoods App</h1>
+            <p>Buy and Sell Locally with Your Neighbors</p>
+        </div>
+        
+        <div class="main-grid">
+            <div class="section">
+                <h2>📋 How It Works</h2>
+                <ul>
+                    <li>Choose your city from dropdown</li>
+                    <li>Browse categories or search</li>
+                    <li>Items within 5 miles</li>
+                    <li>Verified user information</li>
+                    <li>Connect with locals</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h2>🛍️ Available Items</h2>
+                <ul>
+                    <li>Furniture (beds, tables, etc.)</li>
+                    <li>Clothes & accessories</li>
+                    <li>Children's toys</li>
+                    <li>Free giveaways</li>
+                    <li>Household items</li>
+                </ul>
+            </div>
+            
+            <div class="section reviewer-section tall">
+                <h2>👤 Carlos B.</h2>
+                <span class="reviewer-name">Regular User</span>
+                <ul>
+                    <li>Uses app all the time</li>
+                    <li>Read positive reviews first</li>
+                    <li>Very easy to use</li>
+                    <li>Loves local search</li>
+                    <li>Never travels far</li>
+                </ul>
+                <div class="quote">"It's great for finding interesting or inexpensive furniture, clothes, or children's toys."</div>
+            </div>
+            
+            <div class="section reviewer-section tall">
+                <h2>👤 Dan M.</h2>
+                <span class="reviewer-name">New Apartment Owner</span>
+                <ul>
+                    <li>Recently moved</li>
+                    <li>Found bed, 2 tables, bookcase</li>
+                    <li>Only paid $100 total</li>
+                    <li>Seller lived nearby</li>
+                    <li>Made new friends</li>
+                </ul>
+                <div class="quote">"My favorite thing about using the app was getting to meet my neighbors!"</div>
+            </div>
+            
+            <div class="section">
+                <h2>🔒 Safety</h2>
+                <ul>
+                    <li>Identity verification</li>
+                    <li>5-mile radius only</li>
+                    <li>User reviews</li>
+                    <li>Public meetings</li>
+                    <li>Community trust</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h2>💡 Advantages</h2>
+                <ul>
+                    <li>Save money</li>
+                    <li>No long trips</li>
+                    <li>Support community</li>
+                    <li>Eco-friendly</li>
+                    <li>Meet neighbors</li>
+                </ul>
+            </div>
+            
+            <div class="benefits">
+                <h2>✨ Key Benefits of NeighborGoods</h2>
+                <div class="benefits-grid">
+                    <div class="benefit-card">
+                        <div class="icon">💰</div>
+                        <h3>Save Money</h3>
+                        <p>Great deals on quality items</p>
+                    </div>
+                    <div class="benefit-card">
+                        <div class="icon">📍</div>
+                        <h3>Nearby</h3>
+                        <p>5-mile radius search</p>
+                    </div>
+                    <div class="benefit-card">
+                        <div class="icon">🤝</div>
+                        <h3>Community</h3>
+                        <p>Meet your neighbors</p>
+                    </div>
+                    <div class="benefit-card">
+                        <div class="icon">✅</div>
+                        <h3>Safe</h3>
+                        <p>Verified users</p>
+                    </div>
+                    <div class="benefit-card">
+                        <div class="icon">♻️</div>
+                        <h3>Eco-Friendly</h3>
+                        <p>Reduce waste</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

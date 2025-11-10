@@ -1,0 +1,96 @@
+<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- Código QR simplificado -->
+  <rect width="60" height="60" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  
+  <!-- Esquinas de posicionamiento -->
+  <!-- Esquina superior izquierda -->
+  <rect x="2" y="2" width="14" height="14" fill="#000000"/>
+  <rect x="4" y="4" width="10" height="10" fill="#ffffff"/>
+  <rect x="6" y="6" width="6" height="6" fill="#000000"/>
+  
+  <!-- Esquina superior derecha -->
+  <rect x="44" y="2" width="14" height="14" fill="#000000"/>
+  <rect x="46" y="4" width="10" height="10" fill="#ffffff"/>
+  <rect x="48" y="6" width="6" height="6" fill="#000000"/>
+  
+  <!-- Esquina inferior izquierda -->
+  <rect x="2" y="44" width="14" height="14" fill="#000000"/>
+  <rect x="4" y="46" width="10" height="10" fill="#ffffff"/>
+  <rect x="6" y="48" width="6" height="6" fill="#000000"/>
+  
+  <!-- Patrón de datos simulado -->
+  <g fill="#000000">
+    <!-- Fila 1 -->
+    <rect x="20" y="4" width="2" height="2"/>
+    <rect x="24" y="4" width="2" height="2"/>
+    <rect x="28" y="4" width="2" height="2"/>
+    <rect x="32" y="4" width="2" height="2"/>
+    <rect x="36" y="4" width="2" height="2"/>
+    <rect x="40" y="4" width="2" height="2"/>
+    
+    <!-- Fila 2 -->
+    <rect x="18" y="8" width="2" height="2"/>
+    <rect x="22" y="8" width="2" height="2"/>
+    <rect x="30" y="8" width="2" height="2"/>
+    <rect x="34" y="8" width="2" height="2"/>
+    <rect x="38" y="8" width="2" height="2"/>
+    
+    <!-- Fila 3 -->
+    <rect x="20" y="12" width="2" height="2"/>
+    <rect x="26" y="12" width="2" height="2"/>
+    <rect x="32" y="12" width="2" height="2"/>
+    <rect x="36" y="12" width="2" height="2"/>
+    <rect x="40" y="12" width="2" height="2"/>
+    
+    <!-- Líneas de separación -->
+    <rect x="18" y="18" width="24" height="2"/>
+    
+    <!-- Patrón central -->
+    <rect x="20" y="22" width="2" height="2"/>
+    <rect x="24" y="22" width="2" height="2"/>
+    <rect x="28" y="22" width="2" height="2"/>
+    <rect x="32" y="22" width="2" height="2"/>
+    <rect x="36" y="22" width="2" height="2"/>
+    <rect x="40" y="22" width="2" height="2"/>
+    
+    <rect x="18" y="26" width="2" height="2"/>
+    <rect x="22" y="26" width="2" height="2"/>
+    <rect x="26" y="26" width="2" height="2"/>
+    <rect x="34" y="26" width="2" height="2"/>
+    <rect x="38" y="26" width="2" height="2"/>
+    
+    <rect x="20" y="30" width="2" height="2"/>
+    <rect x="28" y="30" width="2" height="2"/>
+    <rect x="32" y="30" width="2" height="2"/>
+    <rect x="40" y="30" width="2" height="2"/>
+    
+    <rect x="22" y="34" width="2" height="2"/>
+    <rect x="26" y="34" width="2" height="2"/>
+    <rect x="30" y="34" width="2" height="2"/>
+    <rect x="36" y="34" width="2" height="2"/>
+    
+    <rect x="18" y="38" width="2" height="2"/>
+    <rect x="24" y="38" width="2" height="2"/>
+    <rect x="28" y="38" width="2" height="2"/>
+    <rect x="34" y="38" width="2" height="2"/>
+    <rect x="40" y="38" width="2" height="2"/>
+    
+    <!-- Patrón inferior -->
+    <rect x="20" y="48" width="2" height="2"/>
+    <rect x="24" y="48" width="2" height="2"/>
+    <rect x="28" y="48" width="2" height="2"/>
+    <rect x="32" y="48" width="2" height="2"/>
+    <rect x="36" y="48" width="2" height="2"/>
+    <rect x="40" y="48" width="2" height="2"/>
+    
+    <rect x="18" y="52" width="2" height="2"/>
+    <rect x="22" y="52" width="2" height="2"/>
+    <rect x="30" y="52" width="2" height="2"/>
+    <rect x="38" y="52" width="2" height="2"/>
+    
+    <rect x="20" y="56" width="2" height="2"/>
+    <rect x="26" y="56" width="2" height="2"/>
+    <rect x="32" y="56" width="2" height="2"/>
+    <rect x="40" y="56" width="2" height="2"/>
+  </g>
+</svg>
