@@ -23,6 +23,10 @@ export const API_BASE = (isDev && isLocalhost)
   ? 'http://localhost:4001/api'
   : (envBase || 'https://backend-a9mk.onrender.com/api');
 
+// Base del host (sin /api) para endpoints de administración y archivos
+export const API_HOST = (API_BASE || '').replace(/\/?api\/?$/, '');
+export const ASSET_BASE = API_HOST;
+
 const api = axios.create({
   baseURL: sanitizeBase(API_BASE) || API_BASE,
   headers: {
