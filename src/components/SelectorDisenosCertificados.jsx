@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
+import { API_HOST, ASSET_BASE } from '../config/api';
 
 const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
   const [disenos, setDisenos] = useState([]);
@@ -254,7 +255,7 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
   const actualizarEstadoCertificado = async (certificadoId) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:4001/admin/certificados/${certificadoId}`, {
+      await fetch(`${API_HOST}/admin/certificados/${certificadoId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -286,7 +287,7 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
         try {
           const img = new Image();
           img.crossOrigin = 'anonymous';
-          img.src = `http://localhost:4001${diseno.fondoCertificado}`;
+          img.src = `${ASSET_BASE}${diseno.fondoCertificado}`;
           await new Promise((resolve, reject) => {
             img.onload = resolve;
             img.onerror = reject;
@@ -351,7 +352,7 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
         try {
           const logoIzq = new Image();
           logoIzq.crossOrigin = 'anonymous';
-          logoIzq.src = `http://localhost:4001${diseno.logoIzquierdo}`;
+          logoIzq.src = `${ASSET_BASE}${diseno.logoIzquierdo}`;
           await new Promise((resolve, reject) => {
             logoIzq.onload = resolve;
             logoIzq.onerror = reject;
@@ -366,7 +367,7 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
         try {
           const logoDer = new Image();
           logoDer.crossOrigin = 'anonymous';
-          logoDer.src = `http://localhost:4001${diseno.logoDerecho}`;
+          logoDer.src = `${ASSET_BASE}${diseno.logoDerecho}`;
           await new Promise((resolve, reject) => {
             logoDer.onload = resolve;
             logoDer.onerror = reject;
@@ -444,15 +445,15 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
                 <div className="relative bg-white border rounded-lg overflow-hidden" style={{aspectRatio: '4/3'}}>
                   {/* Fondo del certificado */}
                   {diseno.fondoCertificado ? (
-                    <img
-                      src={diseno.fondoCertificado.startsWith('/') ? diseno.fondoCertificado : `/${diseno.fondoCertificado}`}
-                      alt="Fondo del certificado"
-                      className="absolute inset-0 w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
+                <img
+                  src={`${ASSET_BASE}${diseno.fondoCertificado}`}
+                  alt="Fondo del certificado"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
                   ) : null}
                   {/* Fondo por defecto (siempre presente como fallback) */}
                   <div 
@@ -465,7 +466,7 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
                     {/* Logos */}
                     {diseno.logoIzquierdo && (
                       <img
-                        src={diseno.logoIzquierdo.startsWith('/') ? diseno.logoIzquierdo : `/${diseno.logoIzquierdo}`}
+                        src={`${ASSET_BASE}${diseno.logoIzquierdo}`}
                         alt="Logo izquierdo"
                         className="absolute w-6 h-6 object-contain"
                         style={{
@@ -479,7 +480,7 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
                     )}
                     {diseno.logoDerecho && (
                       <img
-                        src={diseno.logoDerecho.startsWith('/') ? diseno.logoDerecho : `/${diseno.logoDerecho}`}
+                        src={`${ASSET_BASE}${diseno.logoDerecho}`}
                         alt="Logo derecho"
                         className="absolute w-6 h-6 object-contain"
                         style={{
@@ -638,7 +639,7 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
               <p className="font-medium">{selectedDiseno?.nombre}</p>
               {selectedDiseno?.fondoCertificado && (
                 <img
-                  src={`http://localhost:4001${selectedDiseno.fondoCertificado}`}
+                  src={`${ASSET_BASE}${selectedDiseno.fondoCertificado}`}
                   alt="Vista previa"
                   className="w-full h-16 object-cover rounded mt-2"
                 />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_HOST } from '../../config/api';
 import { ConfirmModal, useToast } from '../../components/ui';
 
 function Certificados() {
@@ -29,7 +30,7 @@ function Certificados() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/certificados', {
+      const response = await fetch(`${API_HOST}/admin/certificados`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -54,7 +55,7 @@ function Certificados() {
   const fetchUsuarios = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/users', {
+      const response = await fetch(`${API_HOST}/admin/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -73,7 +74,7 @@ function Certificados() {
   const fetchCursos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/cursos', {
+      const response = await fetch(`${API_HOST}/admin/cursos`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -107,8 +108,8 @@ function Certificados() {
       };
       
       const url = editingCertificadoId 
-        ? `http://localhost:4001/admin/certificados/${editingCertificadoId}`
-        : 'http://localhost:4001/admin/certificados';
+        ? `${API_HOST}/admin/certificados/${editingCertificadoId}`
+        : `${API_HOST}/admin/certificados`;
       
       const method = editingCertificadoId ? 'PUT' : 'POST';
       
@@ -167,7 +168,7 @@ function Certificados() {
     try {
       setDeleting(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4001/admin/certificados/${certToDelete.id}`, {
+      const response = await fetch(`${API_HOST}/admin/certificados/${certToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

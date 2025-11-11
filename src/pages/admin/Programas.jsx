@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_HOST } from '../../config/api';
 import { ConfirmModal, useToast } from '../../components/ui';
 
 function Programas() {
@@ -25,7 +26,7 @@ function Programas() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/programas', {
+      const response = await fetch(`${API_HOST}/admin/programas`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -53,8 +54,8 @@ function Programas() {
       setLoading(true);
       const token = localStorage.getItem('token');
       const url = editingProgramaId 
-        ? `http://localhost:4001/admin/programas/${editingProgramaId}`
-        : 'http://localhost:4001/admin/programas';
+        ? `${API_HOST}/admin/programas/${editingProgramaId}`
+        : `${API_HOST}/admin/programas`;
       
       const method = editingProgramaId ? 'PUT' : 'POST';
       
@@ -112,7 +113,7 @@ function Programas() {
     try {
       setDeleting(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4001/admin/programas/${programaToDelete.id}`, {
+      const response = await fetch(`${API_HOST}/admin/programas/${programaToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

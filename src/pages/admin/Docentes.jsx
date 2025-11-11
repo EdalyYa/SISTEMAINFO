@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_HOST } from '../../config/api';
 import { useToast, ConfirmModal } from '../../components/ui';
 import { Plus, GraduationCap, Search, AlertCircle, CheckCircle, Mail, Phone, Briefcase } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -36,7 +37,7 @@ function Docentes() {
       setError(null);
       setSuccess(null);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/docentes', {
+      const response = await fetch(`${API_HOST}/admin/docentes`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -84,8 +85,8 @@ function Docentes() {
     try {
       const token = localStorage.getItem('token');
       const url = editingDocenteId 
-        ? `http://localhost:4001/admin/docentes/${editingDocenteId}`
-        : 'http://localhost:4001/admin/docentes';
+        ? `${API_HOST}/admin/docentes/${editingDocenteId}`
+        : `${API_HOST}/admin/docentes`;
       
       const method = editingDocenteId ? 'PUT' : 'POST';
       
@@ -152,7 +153,7 @@ function Docentes() {
       setError(null);
       setSuccess(null);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4001/admin/docentes/${docenteToDelete.id}`, {
+      const response = await fetch(`${API_HOST}/admin/docentes/${docenteToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

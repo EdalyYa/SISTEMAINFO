@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_HOST } from '../../config/api';
 import { ConfirmModal, useToast } from '../../components/ui';
 import { Plus, AlertTriangle, Search, AlertCircle, CheckCircle, User, Calendar, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -34,7 +35,7 @@ function Reclamaciones() {
       setError(null);
       setSuccess(null);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/reclamaciones', {
+      const response = await fetch(`${API_HOST}/admin/reclamaciones`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -58,7 +59,7 @@ function Reclamaciones() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/users', {
+      const response = await fetch(`${API_HOST}/admin/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -98,8 +99,8 @@ function Reclamaciones() {
     try {
       const token = localStorage.getItem('token');
       const url = editingReclamacion 
-        ? `http://localhost:4001/admin/reclamaciones/${editingReclamacion.id}`
-        : 'http://localhost:4001/admin/reclamaciones';
+        ? `${API_HOST}/admin/reclamaciones/${editingReclamacion.id}`
+        : `${API_HOST}/admin/reclamaciones`;
       
       const method = editingReclamacion ? 'PUT' : 'POST';
       
@@ -163,7 +164,7 @@ function Reclamaciones() {
       setError(null);
       setSuccess(null);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4001/admin/reclamaciones/${reclamacionToDelete.id}`, {
+      const response = await fetch(`${API_HOST}/admin/reclamaciones/${reclamacionToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

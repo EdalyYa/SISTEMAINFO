@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_HOST, ASSET_BASE } from '../config/api';
 import { 
   FileText, 
   Users, 
@@ -27,7 +28,7 @@ const GenerarCertificados = ({ onClose }) => {
   const cargarDisenosGuardados = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/admin/certificados/disenos', {
+      const response = await fetch(`${API_HOST}/admin/certificados/disenos`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -47,7 +48,7 @@ const GenerarCertificados = ({ onClose }) => {
   const cargarEstudiantes = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/admin/certificados', {
+      const response = await fetch(`${API_HOST}/admin/certificados`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -96,7 +97,7 @@ const GenerarCertificados = ({ onClose }) => {
         activo: 1
       };
 
-      const response = await fetch('http://localhost:4001/admin/certificados', {
+      const response = await fetch(`${API_HOST}/admin/certificados`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -275,7 +276,7 @@ const GenerarCertificados = ({ onClose }) => {
                   {/* Fondo del certificado */}
                   {disenoSeleccionado.fondoCertificado && (
                     <img
-                      src={`http://localhost:4001${disenoSeleccionado.fondoCertificado}`}
+                      src={`${ASSET_BASE}${disenoSeleccionado.fondoCertificado}`}
                       alt="Fondo"
                       className="absolute inset-0 w-full h-full object-cover"
                       style={{ zIndex: 0 }}

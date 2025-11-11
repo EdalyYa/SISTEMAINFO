@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 import { useToast, ConfirmModal } from '../../components/ui';
+import { API_HOST, ASSET_BASE } from '../../config/api';
 
 function ProgramasAdmin() {
   const [programas, setProgramas] = useState([]);
@@ -34,7 +35,7 @@ function ProgramasAdmin() {
   const fetchProgramas = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/programas', {
+      const response = await fetch(`${API_HOST}/admin/programas`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -66,7 +67,7 @@ function ProgramasAdmin() {
         const formDataImage = new FormData();
         formDataImage.append('imagen', imageFile);
 
-        const uploadResponse = await fetch('http://localhost:4001/admin/programas/upload-image', {
+        const uploadResponse = await fetch(`${API_HOST}/admin/programas/upload-image`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -90,8 +91,8 @@ function ProgramasAdmin() {
       }
 
       const url = editingPrograma 
-        ? `http://localhost:4001/admin/programas/${editingPrograma.id}`
-        : 'http://localhost:4001/admin/programas';
+        ? `${API_HOST}/admin/programas/${editingPrograma.id}`
+        : `${API_HOST}/admin/programas`;
       
       const method = editingPrograma ? 'PUT' : 'POST';
       
@@ -169,7 +170,7 @@ function ProgramasAdmin() {
     });
     // Mostrar la imagen actual si existe
     if (programa.imagen && programa.imagen.startsWith('/uploads')) {
-      setImagePreview(`http://localhost:4001${programa.imagen}`);
+      setImagePreview(`${ASSET_BASE}${programa.imagen}`);
     } else {
       setImagePreview(programa.imagen || '');
     }
@@ -191,7 +192,7 @@ function ProgramasAdmin() {
     try {
       setDeleting(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4001/admin/programas/${programaToDelete.id}`, {
+      const response = await fetch(`${API_HOST}/admin/programas/${programaToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -284,8 +285,8 @@ function ProgramasAdmin() {
             <div className="mb-3">
               {programa.imagen ? (
                 <img 
-                  src={programa.imagen.startsWith('/uploads') 
-                    ? `http://localhost:4001${programa.imagen}` 
+                  src={programa.imagen?.startsWith('/uploads') 
+                    ? `${ASSET_BASE}${programa.imagen}` 
                     : programa.imagen
                   }
                   alt={programa.nombre}

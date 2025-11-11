@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_HOST } from '../../config/api';
 import { ConfirmModal, useToast } from '../../components/ui';
 import { Plus, FileText, Search, AlertCircle, CheckCircle, User, BookOpen, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -36,7 +37,7 @@ function Matriculas() {
       setError(null);
       setSuccess(null);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/matriculas', {
+      const response = await fetch(`${API_HOST}/admin/matriculas`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -61,7 +62,7 @@ function Matriculas() {
   const fetchUsuarios = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/users', {
+      const response = await fetch(`${API_HOST}/admin/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -80,7 +81,7 @@ function Matriculas() {
   const fetchCursos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/cursos', {
+      const response = await fetch(`${API_HOST}/admin/cursos`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -117,8 +118,8 @@ function Matriculas() {
     try {
       const token = localStorage.getItem('token');
       const url = editingMatriculaId 
-        ? `http://localhost:4001/admin/matriculas/${editingMatriculaId}`
-        : 'http://localhost:4001/admin/matriculas';
+        ? `${API_HOST}/admin/matriculas/${editingMatriculaId}`
+        : `${API_HOST}/admin/matriculas`;
       
       const method = editingMatriculaId ? 'PUT' : 'POST';
       
@@ -181,7 +182,7 @@ function Matriculas() {
       setError(null);
       setSuccess(null);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4001/admin/matriculas/${matriculaToDelete.id}`, {
+      const response = await fetch(`${API_HOST}/admin/matriculas/${matriculaToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

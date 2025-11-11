@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_HOST } from '../../config/api';
 import { Plus, Puzzle, Search, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AdminTable from '../../components/admin/AdminTable';
@@ -45,7 +46,7 @@ function ModulosAdmin() {
       setLoading(true);
       setError(null);
       const token = getAuthToken();
-      const url = programaId ? `http://localhost:4001/admin/modulos?programa_id=${programaId}` : 'http://localhost:4001/admin/modulos';
+      const url = programaId ? `${API_HOST}/admin/modulos?programa_id=${programaId}` : `${API_HOST}/admin/modulos`;
       const res = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -75,7 +76,7 @@ function ModulosAdmin() {
   const fetchProgramas = async () => {
     try {
       const token = getAuthToken();
-      const res = await fetch('http://localhost:4001/admin/programas', {
+      const res = await fetch(`${API_HOST}/admin/programas`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -129,8 +130,8 @@ function ModulosAdmin() {
       }
       const token = getAuthToken();
       const url = editingId
-        ? `http://localhost:4001/admin/modulos/${editingId}`
-        : 'http://localhost:4001/admin/modulos';
+        ? `${API_HOST}/admin/modulos/${editingId}`
+        : `${API_HOST}/admin/modulos`;
       const method = editingId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -196,7 +197,7 @@ function ModulosAdmin() {
     try {
       setDeleting(true);
       const token = getAuthToken();
-      const res = await fetch(`http://localhost:4001/admin/modulos/${moduloToDelete.id}`, {
+      const res = await fetch(`${API_HOST}/admin/modulos/${moduloToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_HOST } from "../config/api";
 import { Link, useParams } from "react-router-dom";
 
 export default function Modulos() {
@@ -13,7 +14,7 @@ export default function Modulos() {
       try {
         setError("");
         // Cargar nombre del programa (público)
-        const resPrograma = await fetch(`http://localhost:4001/admin/programas/${programaId}`);
+        const resPrograma = await fetch(`${API_HOST}/admin/programas/${programaId}`);
         if (resPrograma.ok) {
           const p = await resPrograma.json();
           setProgramaNombre(p?.nombre || `#${programaId}`);

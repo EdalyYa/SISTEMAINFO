@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_HOST, ASSET_BASE, API_BASE } from '../../config/api';
 import { Plus, BookOpen, Search, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AdminTable from '../../components/admin/AdminTable';
@@ -76,7 +77,7 @@ function Cursos() {
       setError(null);
       setSuccess(null);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/cursos', {
+      const response = await fetch(`${API_HOST}/admin/cursos`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -107,7 +108,7 @@ function Cursos() {
   const fetchProgramas = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/admin/programas', {
+      const response = await fetch(`${API_HOST}/admin/programas`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -175,8 +176,8 @@ function Cursos() {
     try {
       const token = localStorage.getItem('token');
       const url = editingCursoId 
-        ? `http://localhost:4001/admin/cursos/${editingCursoId}`
-        : 'http://localhost:4001/admin/cursos';
+        ? `${API_HOST}/admin/cursos/${editingCursoId}`
+        : `${API_HOST}/admin/cursos`;
       
       const method = editingCursoId ? 'PUT' : 'POST';
       
@@ -216,7 +217,7 @@ function Cursos() {
 
             if (!editingCursoId) {
               // Crear horario al crear curso
-              const r = await fetch('http://localhost:4001/api/horarios', {
+              const r = await fetch(`${API_BASE}/horarios`, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${token}`,
@@ -227,13 +228,13 @@ function Cursos() {
               await r.json().catch(() => ({}));
             } else {
               // Upsert al actualizar: buscar por grupo CN{id}
-              const listRes = await fetch('http://localhost:4001/api/horarios/admin', {
+              const listRes = await fetch(`${API_BASE}/horarios/admin`, {
                 headers: { 'Authorization': `Bearer ${token}` }
               });
               const horarios = await listRes.json().catch(() => []);
               const existente = Array.isArray(horarios) ? horarios.find(h => h.grupo === grupoCode) : null;
               if (existente) {
-                const r = await fetch(`http://localhost:4001/api/horarios/${existente.id}`, {
+                const r = await fetch(`${API_BASE}/horarios/${existente.id}`, {
                   method: 'PUT',
                   headers: {
                     'Authorization': `Bearer ${token}`,
@@ -243,7 +244,7 @@ function Cursos() {
                 });
                 await r.json().catch(() => ({}));
               } else {
-                const r = await fetch('http://localhost:4001/api/horarios', {
+                const r = await fetch(`${API_BASE}/horarios`, {
                   method: 'POST',
                   headers: {
                     'Authorization': `Bearer ${token}`,
@@ -349,7 +350,7 @@ function Cursos() {
       setError(null);
       setSuccess(null);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4001/admin/cursos/${cursoToDelete.id}`, {
+      const response = await fetch(`${API_HOST}/admin/cursos/${cursoToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -399,7 +400,7 @@ function Cursos() {
     if (!path) return null;
     if (typeof path !== 'string') return null;
     if (path.startsWith('http')) return path;
-    return `http://localhost:4001${path.startsWith('/') ? path : '/' + path}`;
+    return `${ASSET_BASE}${path.startsWith('/') ? path : '/' + path}`;
   };
 
   const handleImageUpload = async (file) => {
@@ -408,7 +409,7 @@ function Cursos() {
       const token = localStorage.getItem('token');
       const fd = new FormData();
       fd.append('imagen', file);
-      const res = await fetch('http://localhost:4001/admin/cursos/upload-image', {
+      const res = await fetch(`${API_HOST}/admin/cursos/upload-image`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: fd
@@ -436,8 +437,8 @@ function Cursos() {
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
       const url = programaId
-        ? `http://localhost:4001/admin/modulos?programa_id=${programaId}`
-        : 'http://localhost:4001/admin/modulos';
+        ? `${API_HOST}/admin/modulos?programa_id=${programaId}`
+        : `${API_HOST}/admin/modulos`;
       const res = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,

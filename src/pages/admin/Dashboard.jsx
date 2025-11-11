@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_HOST } from '../../config/api';
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -14,7 +15,7 @@ function Dashboard() {
   const [error, setError] = useState(null);
   // Datos del dashboard
   const HOST = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  const API_URL = `http://${HOST}:4001`;
+  const API_URL = API_HOST;
   const getToken = () => sessionStorage.getItem('token') || localStorage.getItem('token');
 
   const [usersRecent, setUsersRecent] = useState([]);
@@ -35,7 +36,7 @@ function Dashboard() {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:4001/admin/dashboard', {
+      const response = await fetch(`${API_URL}/admin/dashboard`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../../config/api';
 import { Plus, Edit2, Trash2, Eye, EyeOff, Save, X } from 'lucide-react';
 import { ConfirmModal, useToast } from '../../components/ui';
 
@@ -23,7 +24,7 @@ function CifrasLogrosAdmin() {
   const fetchCifras = async () => {
     try {
       const token = localStorage.getItem('token'); // Cambiar de 'adminToken' a 'token'
-      const response = await fetch('http://localhost:4001/api/cifras-logros/admin', {
+      const response = await fetch(`${API_BASE}/cifras-logros/admin`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -51,7 +52,7 @@ function CifrasLogrosAdmin() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4001/api/cifras-logros/admin', {
+      const response = await fetch(`${API_BASE}/cifras-logros/admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +79,7 @@ function CifrasLogrosAdmin() {
       const token = localStorage.getItem('token');
       const cifra = cifras.find(c => c.id === id);
       
-      const response = await fetch(`http://localhost:4001/api/cifras-logros/admin/${id}`, {
+      const response = await fetch(`${API_BASE}/cifras-logros/admin/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +106,7 @@ function CifrasLogrosAdmin() {
       setDeleting(true);
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:4001/api/cifras-logros/admin/${id}`, {
+        const response = await fetch(`${API_BASE}/cifras-logros/admin/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -133,7 +134,7 @@ function CifrasLogrosAdmin() {
   const handleToggleActive = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4001/api/cifras-logros/admin/${id}/toggle`, {
+      const response = await fetch(`${API_BASE}/cifras-logros/admin/${id}/toggle`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`
