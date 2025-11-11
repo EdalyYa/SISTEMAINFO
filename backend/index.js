@@ -46,6 +46,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Ruta raíz y health-check para Render
+app.get('/', (req, res) => {
+  res.type('text').send('INFOUNA API • OK');
+});
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 // Redirección directa: cuando el frontend solicita /admin (por proxy),
 // responder con 302 hacia el login del panel en el sitio público.
 // Esto evita el "Cannot GET /admin" y mantiene el acceso en /panel/login.
