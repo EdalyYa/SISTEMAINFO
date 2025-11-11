@@ -22,6 +22,7 @@ import WhatsAppButton from "../components/WhatsAppButton";
 import videoFile from "../videos/Video.mp4";
 import SocialHub from "../components/SocialHub";
 import ImageOptimized from "../components/ImageOptimized";
+import edificioInfouna from '../Imagenes/edificio-infouna.jpg';
 
 function HomePage() {
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -186,7 +187,7 @@ function HomePage() {
               {/* Imagen superior, responsiva con altura limitada */}
               <div className="rounded-2xl overflow-hidden border aspect-video relative">
                 <ImageOptimized
-                  src="/src/Imagenes/edificio-infouna.jpg"
+                  src={edificioInfouna}
                   alt="Edificio del Instituto de Informática INFOUNA - Universidad Nacional del Altiplano"
                   className="absolute inset-0 w-full h-full object-cover"
                 />

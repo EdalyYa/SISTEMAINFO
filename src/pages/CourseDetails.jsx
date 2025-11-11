@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import TuitionModal from '../components/TuitionModal';
 import ImageOptimized from '../components/ImageOptimized';
+import logoFallback from '../logo.png';
+import course1 from '../Imagenes/cursos/course1.jpg';
+import course2 from '../Imagenes/cursos/course2.jpg';
+import course3 from '../Imagenes/cursos/course3.jpg';
+import course4 from '../Imagenes/cursos/course4.jpg';
+import excelImg from '../Imagenes/Excel.png';
 
 const programs = [
   {
@@ -13,7 +19,7 @@ const programs = [
         name: 'Adobe Photoshop CC 2024', 
         modality: 'Presencial', 
         schedule: 'Lunes y Miércoles 6-8pm', 
-        image: '/course1.jpg',
+        image: course1,
         duration: '72 horas',
         instructor: 'Prof. Juan Pérez',
         level: 'Intermedio'
@@ -22,7 +28,7 @@ const programs = [
         name: 'Adobe Illustrator Avanzado', 
         modality: 'Virtual', 
         schedule: 'Martes y Jueves 7-9pm', 
-        image: '/course2.jpg',
+        image: course2,
         duration: '48 horas',
         instructor: 'Prof. María López',
         level: 'Avanzado'
@@ -38,7 +44,7 @@ const programs = [
         name: 'Excel Básico a Intermedio', 
         modality: 'Presencial', 
         schedule: 'Lunes y Miércoles 4-6pm', 
-        image: 'src/Imagenes/Excel.png',
+        image: excelImg,
         duration: '60 horas',
         instructor: 'Prof. Carlos Rodríguez',
         level: 'Básico'
@@ -47,7 +53,7 @@ const programs = [
         name: 'Excel Avanzado y Dashboard', 
         modality: 'Virtual', 
         schedule: 'Sábados 9-12pm', 
-        image: '/course4.jpg',
+        image: course4,
         duration: '48 horas',
         instructor: 'Prof. Ana García',
         level: 'Intermedio'
@@ -63,7 +69,7 @@ const programs = [
         name: 'Excel Básico a Intermedio', 
         modality: 'Presencial', 
         schedule: 'Lunes y Miércoles 4-6pm', 
-        image: '/course3.jpg',
+        image: course3,
         duration: '60 horas',
         instructor: 'Prof. Carlos Rodríguez',
         level: 'Básico'
@@ -72,7 +78,7 @@ const programs = [
         name: 'Excel Avanzado y Dashboard', 
         modality: 'Virtual', 
         schedule: 'Sábados 9-12pm', 
-        image: '/course4.jpg',
+        image: course4,
         duration: '48 horas',
         instructor: 'Prof. Ana García',
         level: 'Intermedio'
@@ -88,7 +94,7 @@ const programs = [
         name: 'Excel Básico a Intermedio', 
         modality: 'Presencial', 
         schedule: 'Lunes y Miércoles 4-6pm', 
-        image: '/course3.jpg',
+        image: course3,
         duration: '60 horas',
         instructor: 'Prof. Carlos Rodríguez',
         level: 'Básico'
@@ -97,7 +103,7 @@ const programs = [
         name: 'Excel Avanzado y Dashboard', 
         modality: 'Virtual', 
         schedule: 'Sábados 9-12pm', 
-        image: '/course4.jpg',
+        image: course4,
         duration: '48 horas',
         instructor: 'Prof. Ana García',
         level: 'Intermedio'
@@ -186,7 +192,7 @@ function CourseDetails() {
             {program.courses.map((course, index) => (
               <div key={index} className="border rounded-lg p-4 hover:shadow-md transition">
                 <ImageOptimized 
-                  src={course.image || '/src/logo.png'} 
+                  src={course.image || logoFallback} 
                   alt={course.name}
                   className="w-full h-48 rounded mb-3"
                 />

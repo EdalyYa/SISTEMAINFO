@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logoFallback from '../logo.png';
 
 /**
  * ImageOptimized: imagen con lazy-loading, fallback y transición suave.
@@ -12,7 +13,7 @@ export default function ImageOptimized({
   height,
   sizes,
   srcSet,
-  fallbackSrc = '/src/logo.png',
+  fallbackSrc = logoFallback,
   style,
   ...rest
 }) {
@@ -45,4 +46,3 @@ export default function ImageOptimized({
     />
   );
 }
-

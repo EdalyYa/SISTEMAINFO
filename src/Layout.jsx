@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import Loader from "./components/Loader";
 import ScrollProgressBar from "./components/ScrollProgressBar";
 import { FaFacebookF, FaTiktok, FaWhatsapp, FaYoutube, FaArrowUp } from "react-icons/fa";
+import logo from './logo.png';
 
 export default function Layout({ children }) {
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -146,7 +147,7 @@ export default function Layout({ children }) {
       <header className={`fixed top-10 left-0 w-full bg-white ${hasScrolled ? 'shadow-sm' : 'shadow'} z-40 transition-shadow`}>
         <div className="flex justify-between items-center px-6 py-3">
           <div className="flex items-center space-x-4">
-            <img src="/src/logo.png" alt="Instituto de Informática Logo" className="h-10 md:h-12" />
+            <img src={logo} alt="Instituto de Informática Logo" className="h-10 md:h-12" />
             <div className="flex flex-col text-sm">
               <span className="text-gray-600 text-xs md:text-sm">Centro de cómputo InfoUna</span>
               <span className="font-bold text-blue-900 text-sm md:text-base">infoUNA <small className="text-gray-500 font-normal">Domina la tecnología</small></span>
