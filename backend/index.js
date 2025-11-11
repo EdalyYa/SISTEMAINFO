@@ -33,15 +33,9 @@ const devOrigins = [
 const envOrigins = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 const allowedOrigins = [...devOrigins, ...envOrigins];
 
+// CORS: por simplicidad, reflejar cualquier origen (incluye Vercel y previsualizaciones)
 app.use(cors({
-  origin: function (origin, callback) {
-    // Permitir solicitudes sin origen (curl, SSR, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Si no se configuró CORS_ORIGINS, permitir todos para evitar bloqueos en producción inicial
-    if (envOrigins.length === 0) return callback(null, true);
-    return callback(new Error('CORS: Origin no permitido: ' + origin));
-  },
+  origin: (origin, callback) => callback(null, true),
   credentials: true,
 }));
 app.use(express.json());
