@@ -4,3 +4,8 @@ node_modules
 .vercel
 
 # (no back-end ignore; commit backend directory)
+# Build output (no subir)
+dist/
+
+# Evitar subir credenciales locales de Vercel
+.vercel.env.*
