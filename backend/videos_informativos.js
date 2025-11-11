@@ -1,14 +1,6 @@
 const express = require('express');
-const mysql = require('mysql2/promise');
 const router = express.Router();
-
-// Configuración de la base de datos
-const dbConfig = {
-  host: process.env.DB_HOST || '127.0.0.1',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'infouna'
-};
+const { query, execute } = require('./config/database');
 
 // Función para extraer ID de YouTube de una URL
 function extractYouTubeId(url) {
@@ -20,20 +12,16 @@ function extractYouTubeId(url) {
 // GET - Obtener todos los videos activos (para el frontend público)
 router.get('/videos-informativos', async (req, res) => {
   try {
-    const connection = await mysql.createConnection(dbConfig);
-    
-    const [rows] = await connection.execute(
+    const [rows] = await query(
       'SELECT * FROM videos_informativos WHERE activo = TRUE ORDER BY orden ASC, fecha_creacion DESC'
     );
-    
-    await connection.end();
     
     res.json({
       success: true,
       data: rows
     });
   } catch (error) {
-    console.error('Error al obtener videos informativos:', error);
+    console.error('Error al obtener videos informativos:', error.message);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -44,20 +32,16 @@ router.get('/videos-informativos', async (req, res) => {
 // GET - Obtener todos los videos (para el panel admin)
 router.get('/admin/videos-informativos', async (req, res) => {
   try {
-    const connection = await mysql.createConnection(dbConfig);
-    
-    const [rows] = await connection.execute(
+    const [rows] = await query(
       'SELECT * FROM videos_informativos ORDER BY orden ASC, fecha_creacion DESC'
     );
-    
-    await connection.end();
     
     res.json({
       success: true,
       data: rows
     });
   } catch (error) {
-    console.error('Error al obtener videos informativos:', error);
+    console.error('Error al obtener videos informativos:', error.message);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -85,14 +69,10 @@ router.post('/admin/videos-informativos', async (req, res) => {
       });
     }
     
-    const connection = await mysql.createConnection(dbConfig);
-    
-    const [result] = await connection.execute(
+    const [result] = await execute(
       'INSERT INTO videos_informativos (titulo, descripcion, youtube_url, youtube_id, categoria, nombre_testimonio, activo, orden) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [titulo, descripcion, youtube_url, youtube_id, categoria, nombre_testimonio, activo, orden]
     );
-    
-    await connection.end();
     
     res.json({
       success: true,
@@ -100,7 +80,7 @@ router.post('/admin/videos-informativos', async (req, res) => {
       data: { id: result.insertId }
     });
   } catch (error) {
-    console.error('Error al crear video informativo:', error);
+    console.error('Error al crear video informativo:', error.message);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -129,14 +109,10 @@ router.put('/admin/videos-informativos/:id', async (req, res) => {
       });
     }
     
-    const connection = await mysql.createConnection(dbConfig);
-    
-    const [result] = await connection.execute(
+    const [result] = await execute(
       'UPDATE videos_informativos SET titulo = ?, descripcion = ?, youtube_url = ?, youtube_id = ?, categoria = ?, nombre_testimonio = ?, activo = ?, orden = ? WHERE id = ?',
       [titulo, descripcion, youtube_url, youtube_id, categoria, nombre_testimonio, activo, orden, id]
     );
-    
-    await connection.end();
     
     if (result.affectedRows === 0) {
       return res.status(404).json({
@@ -150,7 +126,7 @@ router.put('/admin/videos-informativos/:id', async (req, res) => {
       message: 'Video informativo actualizado exitosamente'
     });
   } catch (error) {
-    console.error('Error al actualizar video informativo:', error);
+    console.error('Error al actualizar video informativo:', error.message);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -162,15 +138,10 @@ router.put('/admin/videos-informativos/:id', async (req, res) => {
 router.delete('/admin/videos-informativos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const connection = await mysql.createConnection(dbConfig);
-    
-    const [result] = await connection.execute(
+    const [result] = await execute(
       'DELETE FROM videos_informativos WHERE id = ?',
       [id]
     );
-    
-    await connection.end();
     
     if (result.affectedRows === 0) {
       return res.status(404).json({
@@ -184,7 +155,7 @@ router.delete('/admin/videos-informativos/:id', async (req, res) => {
       message: 'Video informativo eliminado exitosamente'
     });
   } catch (error) {
-    console.error('Error al eliminar video informativo:', error);
+    console.error('Error al eliminar video informativo:', error.message);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
