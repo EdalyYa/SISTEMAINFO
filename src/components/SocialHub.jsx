@@ -45,18 +45,45 @@ export default function SocialHub() {
 
   // Cargar script de TikTok para el embed del perfil
   const [ttInitKey, setTtInitKey] = React.useState(0);
+  const [ttReady, setTtReady] = React.useState(false);
+  const [ttError, setTtError] = React.useState(false);
+  const ttContainerRef = React.useRef(null);
   React.useEffect(() => {
     const existing = document.querySelector('script[src="https://www.tiktok.com/embed.js"]');
     if (!existing) {
       const s = document.createElement('script');
       s.src = 'https://www.tiktok.com/embed.js';
       s.async = true;
+      s.onload = () => {
+        // El script de TikTok procesará el bloque; daremos margen para que pinte.
+        setTimeout(() => setTtInitKey((k) => k + 1), 300);
+      };
       document.body.appendChild(s);
     }
-    // Fuerza re-procesamiento del bloque cuando el script termina de cargar
+    // Fuerza re-procesamiento si el script ya existía
     const timer = setTimeout(() => setTtInitKey((k) => k + 1), 800);
     return () => clearTimeout(timer);
   }, []);
+
+  // Detectar si el embed renderizó; si no, mostrar fallback
+  React.useEffect(() => {
+    const check = () => {
+      const el = ttContainerRef.current;
+      if (!el) return;
+      const hasContent = el.querySelector('.tiktok-embed')?.nextElementSibling || el.querySelector('iframe');
+      const h = el.offsetHeight;
+      if (hasContent && h > 100) {
+        setTtReady(true);
+        setTtError(false);
+      } else {
+        setTtReady(false);
+        setTtError(true);
+      }
+    };
+    const t1 = setTimeout(check, 1200);
+    const t2 = setTimeout(check, 3500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [ttInitKey]);
 
   // YouTube: configurable vía .env para evitar llamadas externas y errores CORS
   const YT_CHANNEL_ID = import.meta.env.VITE_YOUTUBE_CHANNEL_ID; // UC...
@@ -142,20 +169,28 @@ export default function SocialHub() {
           </div>
 
           {/* TikTok perfil */}
-          <div className="rounded-xl overflow-hidden shadow-lg border border-blue-100 p-2">
-            <blockquote
-              className="tiktok-embed"
-              cite="https://www.tiktok.com/@infouna"
-              data-unique-id="infouna"
-              data-embed-type="creator"
-              data-lang="es-ES"
-              style={{ maxWidth: '720px', minWidth: '288px' }}
-              key={ttInitKey}
-            >
-              <section>
-                <a target="_blank" rel="noreferrer" href="https://www.tiktok.com/@infouna?refer=creator_embed">@infouna</a>
-              </section>
-            </blockquote>
+          <div ref={ttContainerRef} className="rounded-xl overflow-hidden shadow-lg border border-blue-100 p-2">
+            {!ttError && (
+              <blockquote
+                className="tiktok-embed"
+                cite="https://www.tiktok.com/@infouna"
+                data-unique-id="infouna"
+                data-embed-type="creator"
+                data-lang="es-ES"
+                style={{ maxWidth: '720px', minWidth: '288px' }}
+                key={ttInitKey}
+              >
+                <section>
+                  <a target="_blank" rel="noreferrer" href="https://www.tiktok.com/@infouna?refer=creator_embed">@infouna</a>
+                </section>
+              </blockquote>
+            )}
+            {ttError && (
+              <div className="p-4">
+                <p className="text-sm text-gray-600">No se pudo cargar la vista previa de TikTok.</p>
+                <a href={LINKS.tiktok} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center px-3 py-2 bg-black text-white rounded-lg">Abrir perfil en TikTok</a>
+              </div>
+            )}
             {/* Fallback si el script de TikTok está bloqueado */}
             <noscript>
               <div className="p-4">
