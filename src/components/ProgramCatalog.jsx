@@ -258,7 +258,7 @@ function ProgramCatalog() {
           </div>
         </div>
 
-        {/* Carrusel / Grid de programas (responsive) */}
+        {/* Carrusel de programas en todos los tamaños */}
         {filteredPrograms.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl shadow-lg">
             <div className="text-gray-500 text-xl mb-4">No se encontraron programas con los filtros seleccionados.</div>
@@ -270,125 +270,70 @@ function ProgramCatalog() {
             </button>
           </div>
         ) : (
-          <>
-            {/* Grid móvil */}
-            <div className="sm:hidden">
-              <div className="grid grid-cols-1 gap-4">
-                {filteredPrograms.map((program) => (
-                  <div key={program.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div className="relative h-40">
-                      <img
+          <div className="relative program-slider px-2">
+            <Slider {...settings}>
+              {filteredPrograms.map((program) => (
+                <div key={program.id} className="px-2 md:px-4 focus:outline-none">
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-full flex flex-col">
+                    <div className="relative h-40 overflow-hidden">
+                      <img 
                         src={program.image}
                         onError={handleImgError}
-                        alt={`Imagen de ${program.title}`}
-                        className="w-full h-full object-cover"
+                        alt={`Imagen de ${program.title}`} 
+                        className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-lg text-blue-900 mb-1 text-center">{program.title}</h3>
-                      <p className="text-gray-600 text-sm mb-3 text-center">{program.description}</p>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Duración:</span>
-                          <span className="font-medium text-blue-900">{program.duration || '—'}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Modalidad:</span>
-                          <div className="flex items-center">
-                            {program.modality === 'presencial' ? (
-                              <FaMapMarkerAlt className="mr-1 text-blue-600" />
-                            ) : (
-                              <FaDesktop className="mr-1 text-blue-600" />
-                            )}
-                            <span className="capitalize">{program.modality || '—'}</span>
-                          </div>
-                        </div>
-                        {program.price && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-600">Precio:</span>
-                            <span className="font-bold text-green-600">${program.price}</span>
-                          </div>
-                        )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                      <div className="absolute bottom-4 left-4 text-white">
+                        {program.icon}
                       </div>
-                      <button
-                        onClick={() => handleDetailsClick(program.id)}
-                        className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg"
-                      >
-                        Ver detalles
-                      </button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Slider escritorio/tablet */}
-            <div className="relative program-slider px-2 hidden sm:block">
-              <Slider {...settings}>
-                {filteredPrograms.map((program) => (
-                  <div key={program.id} className="px-2 md:px-4 focus:outline-none">
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-full flex flex-col">
-                      <div className="relative h-40 overflow-hidden">
-                        <img 
-                          src={program.image}
-                          onError={handleImgError}
-                          alt={`Imagen de ${program.title}`} 
-                          className="w-full h-full object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                        <div className="absolute bottom-4 left-4 text-white">
-                          {program.icon}
+                    
+                    <div className="p-6 flex flex-col flex-grow">
+                      <h3 className="font-bold text-xl text-blue-900 mb-2 text-center">{program.title}</h3>
+                      <p className="text-gray-600 mb-4 text-center flex-grow">{program.description}</p>
+                      
+                      <div className="mb-5">
+                        <div className="text-sm text-gray-500 mb-2 font-medium">Información del programa:</div>
+                        <div className="text-sm mb-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-gray-600">Duración:</span>
+                            <span className="font-medium text-blue-900">{program.duration}</span>
+                          </div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-gray-600">Modalidad:</span>
+                            <div className="flex items-center">
+                              {program.modality === 'presencial' ? (
+                                <FaMapMarkerAlt className="mr-2 text-sm text-blue-600" />
+                              ) : (
+                                <FaDesktop className="mr-2 text-sm text-blue-600" />
+                              )}
+                              <span className="text-xs font-medium capitalize">{program.modality}</span>
+                            </div>
+                          </div>
+                          {program.price && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-600">Precio:</span>
+                              <span className="font-bold text-green-600">${program.price}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
-                      <div className="p-6 flex flex-col flex-grow">
-                        <h3 className="font-bold text-xl text-blue-900 mb-2 text-center">{program.title}</h3>
-                        <p className="text-gray-600 mb-4 text-center flex-grow">{program.description}</p>
-                        
-                        <div className="mb-5">
-                          <div className="text-sm text-gray-500 mb-2 font-medium">Información del programa:</div>
-                          <div className="text-sm mb-3 p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-gray-600">Duración:</span>
-                              <span className="font-medium text-blue-900">{program.duration}</span>
-                            </div>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-gray-600">Modalidad:</span>
-                              <div className="flex items-center">
-                                {program.modality === 'presencial' ? (
-                                  <FaMapMarkerAlt className="mr-2 text-sm text-blue-600" />
-                                ) : (
-                                  <FaDesktop className="mr-2 text-sm text-blue-600" />
-                                )}
-                                <span className="text-xs font-medium capitalize">{program.modality}</span>
-                              </div>
-                            </div>
-                            {program.price && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-gray-600">Precio:</span>
-                                <span className="font-bold text-green-600">${program.price}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <button
-                          onClick={() => handleDetailsClick(program.id)}
-                          className="mt-auto bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-300 flex items-center justify-center"
-                        >
-                          Ver detalles
-                          <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                          </svg>
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleDetailsClick(program.id)}
+                        className="mt-auto bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-300 flex items-center justify-center"
+                      >
+                        Ver detalles
+                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                      </button>
                     </div>
                   </div>
-                ))}
-              </Slider>
-            </div>
-          </>
+                </div>
+              ))}
+            </Slider>
+          </div>
         )}
       </div>
     </section>
