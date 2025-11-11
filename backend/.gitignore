@@ -1,0 +1,15 @@
+# Node/Express backend ignore rules
+
+node_modules/
+.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS/files
+.DS_Store
+Thumbs.db
+
+# Runtime/uploads (mantén fuera del repo si son generados en servidor)
+uploads/
+

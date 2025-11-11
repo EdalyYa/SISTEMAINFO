@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: infouna-backend
+    env: node
+    autoDeploy: true
+    buildCommand: npm install
+    startCommand: node index.js
+    plan: free
+    runtime: node
+    region: oregon
+    healthCheckPath: /api/news
+    envVars:
+      # Render define la variable PORT automáticamente; el backend ya la usa.
+      - key: NEWS_API_KEY
+        sync: false # Asignar en el panel de Render (Environment)
+      - key: CORS_ORIGINS
+        value: "https://your-frontend.vercel.app, https://your-custom-domain.com"
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: infouna
+

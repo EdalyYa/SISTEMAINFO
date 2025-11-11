@@ -1,0 +1,10 @@
+{
+  "watch": ["*.js", "routes/*.js", "middleware/*.js"],
+  "ignore": [
+    "uploads/**",
+    "public/**",
+    "node_modules/**"
+  ],
+  "ext": "js,json",
+  "delay": "200"
+}
