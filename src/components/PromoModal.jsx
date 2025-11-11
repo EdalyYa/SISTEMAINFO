@@ -4,6 +4,7 @@ import { Modal, Button } from './ui/index';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { CalendarDays, Megaphone, Info, AlertTriangle, ClipboardList, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import logoFallback from '../logo.png';
+import { resolveAssetUrl } from '../utils/assetUrl';
 
 const PromoModal = ({ isOpen, onClose }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -487,12 +488,7 @@ const PromoModal = ({ isOpen, onClose }) => {
                       const lower = p.toLowerCase();
                       return allowedExt.some(ext => lower.endsWith(ext));
                     };
-                    const toPath = (p) => {
-                      if (!p) return null;
-                      // Usar rutas relativas para que Vite proxy maneje /uploads
-                      // Si ya es absoluta (http/https), respetarla
-                      return p.startsWith('http') ? p : p.startsWith('/') ? p : `/${p}`;
-                    };
+                    const toPath = (p) => resolveAssetUrl(p);
                     const imageList = [currentPromo?.imagen, ...extras]
                       .filter(Boolean)
                       .filter(hasValidExt)

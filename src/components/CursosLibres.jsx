@@ -5,6 +5,7 @@ import courseImg1 from '../Imagenes/cursos/course1.jpg';
 import courseImg2 from '../Imagenes/cursos/course2.jpg';
 import courseImg3 from '../Imagenes/cursos/course3.jpg';
 import courseImg4 from '../Imagenes/cursos/course4.jpg';
+import CarouselCursos from './CarouselCursos';
 
 const CursosLibres = () => {
   const location = useLocation();
@@ -309,6 +310,20 @@ const CursosLibres = () => {
           </p>
         </div>
 
+        {/* Carruseles destacados: dividir en dos mitades y girar en sentidos opuestos */}
+        {(() => {
+          const total = cursosLibres.length;
+          const mid = Math.ceil(total / 2);
+          const primeraMitad = cursosLibres.slice(0, mid);
+          const segundaMitad = cursosLibres.slice(mid);
+          return (
+            <div className="space-y-3 mb-4">
+              <CarouselCursos direction="right" align="right" compact hideHeader verMasTo="/cursos-libres" cursos={primeraMitad} />
+              <CarouselCursos direction="left" align="left" compact hideHeader verMasTo="/cursos-libres" cursos={segundaMitad} />
+            </div>
+          );
+        })()}
+
         {/* Barra de búsqueda compacta */}
         <div className="max-w-md md:max-w-none md:w-96 mb-3 mx-auto">
           <div className="relative">
@@ -345,7 +360,7 @@ const CursosLibres = () => {
               {/* Divisores para 3 columnas en pantallas grandes */}
               <div className="hidden lg:block absolute inset-y-0 left-[33.333%] w-px bg-gray-300"></div>
               <div className="hidden lg:block absolute inset-y-0 left-[66.666%] w-px bg-gray-300"></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                 {cursosVisibles.map((curso, index) => (
                   <div key={`list-${curso.id}-${index}`} className="group bg-white border border-gray-100 rounded-xl p-3 hover:shadow-sm transition-shadow">
                   <div className="flex gap-4 items-start">

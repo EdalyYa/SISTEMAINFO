@@ -35,6 +35,14 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Compatibilidad con datos antiguos que referencian activos del frontend
+      // como rutas absolutas '/src/Imagenes/...'. En desarrollo los servimos
+      // a través del backend para que el comportamiento sea idéntico a producción.
+      '/src/Imagenes': {
+        target: 'http://localhost:4001',
+        changeOrigin: true,
+        secure: false,
+      },
       '/admin': {
         target: 'http://localhost:4001',
         changeOrigin: true,

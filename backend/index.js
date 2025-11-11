@@ -67,6 +67,11 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
+// Compatibilidad: servir activos del frontend referenciados como rutas absolutas
+// Algunos registros en BD pueden apuntar a '/src/Imagenes/...'; exponemos esa carpeta
+// del frontend a través del backend para evitar 404 en producción.
+app.use('/src/Imagenes', express.static(path.join(__dirname, '..', 'src', 'Imagenes')));
+
 // Configuración de subida de imágenes para cursos
 const cursosStorage = multer.diskStorage({
   destination: function (req, file, cb) {

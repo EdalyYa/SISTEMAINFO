@@ -43,27 +43,51 @@ export default function SocialHub() {
   const pageUrl = encodeURIComponent(LINKS.facebook);
   const fbPluginUrl = `https://www.facebook.com/plugins/page.php?href=${pageUrl}&tabs=timeline&width=500&height=400&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true`;
 
-  // Cargar script de TikTok para el embed del perfil
+  // Cargar script de TikTok de forma diferida cuando el bloque entra en vista
   const [ttInitKey, setTtInitKey] = React.useState(0);
   const [ttReady, setTtReady] = React.useState(false);
   const [ttError, setTtError] = React.useState(false);
+  const [ttShouldLoad, setTtShouldLoad] = React.useState(false);
   const ttContainerRef = React.useRef(null);
+
+  // Observer para detectar visibilidad del bloque de TikTok
   React.useEffect(() => {
+    const el = ttContainerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.some((e) => e.isIntersecting);
+        if (visible) {
+          setTtShouldLoad(true);
+        }
+      },
+      { root: null, rootMargin: '50px', threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Inyectar el script de TikTok sólo cuando sea necesario
+  React.useEffect(() => {
+    if (!ttShouldLoad) return;
     const existing = document.querySelector('script[src="https://www.tiktok.com/embed.js"]');
     if (!existing) {
       const s = document.createElement('script');
       s.src = 'https://www.tiktok.com/embed.js';
       s.async = true;
       s.onload = () => {
-        // El script de TikTok procesará el bloque; daremos margen para que pinte.
         setTimeout(() => setTtInitKey((k) => k + 1), 300);
       };
+      s.onerror = () => {
+        setTtError(true);
+      };
       document.body.appendChild(s);
+    } else {
+      // Fuerza re-procesamiento si el script ya existía
+      const timer = setTimeout(() => setTtInitKey((k) => k + 1), 600);
+      return () => clearTimeout(timer);
     }
-    // Fuerza re-procesamiento si el script ya existía
-    const timer = setTimeout(() => setTtInitKey((k) => k + 1), 800);
-    return () => clearTimeout(timer);
-  }, []);
+  }, [ttShouldLoad]);
 
   // Detectar si el embed renderizó; si no, mostrar fallback
   React.useEffect(() => {
@@ -82,7 +106,8 @@ export default function SocialHub() {
     };
     const t1 = setTimeout(check, 1200);
     const t2 = setTimeout(check, 3500);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const t3 = setTimeout(check, 6000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [ttInitKey]);
 
   // YouTube: configurable vía .env para evitar llamadas externas y errores CORS

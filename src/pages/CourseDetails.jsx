@@ -119,7 +119,7 @@ const programs = [
         name: 'Excel Básico a Intermedio', 
         modality: 'Presencial', 
         schedule: 'Lunes y Miércoles 4-6pm', 
-        image: '/course3.jpg',
+        image: course3,
         duration: '60 horas',
         instructor: 'Prof. Carlos Rodríguez',
         level: 'Básico'
@@ -128,7 +128,7 @@ const programs = [
         name: 'Excel Avanzado y Dashboard', 
         modality: 'Virtual', 
         schedule: 'Sábados 9-12pm', 
-        image: '/course4.jpg',
+        image: course4,
         duration: '48 horas',
         instructor: 'Prof. Ana García',
         level: 'Intermedio'

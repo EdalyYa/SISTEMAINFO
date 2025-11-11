@@ -27,6 +27,11 @@ function Programas() {
   const resolveImageUrl = (path) => {
     if (!path || typeof path !== 'string') return null;
     if (path.startsWith('http')) return path;
+    // Compatibilidad con datos antiguos que usan rutas absolutas del frontend
+    if (path.startsWith('/src/Imagenes')) {
+      const fixed = path.startsWith('/') ? path : `/${path}`;
+      return `${ASSET_BASE}${fixed}`;
+    }
     if (path.includes('/uploads')) {
       const fixed = path.startsWith('/') ? path : `/${path}`;
       return `${ASSET_BASE}${fixed}`;
