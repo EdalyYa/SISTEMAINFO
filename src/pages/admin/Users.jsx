@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, RefreshCw, Search, Filter, Edit, Trash } from 'lucide-react';
-import api, { API_BASE } from '../../config/api';
+import api, { API_BASE, API_HOST } from '../../config/api';
 import { ConfirmModal, useToast } from '../../components/ui';
 
 function Users() {
@@ -24,8 +24,7 @@ function Users() {
   });
 
   // URL raíz del backend para endpoints sin prefijo /api
-  const HOST = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  const API_URL = `http://${HOST}:4001`;
+  const API_URL = API_HOST;
 
   // Unificar la obtención del token desde sessionStorage o localStorage
   const getToken = () => sessionStorage.getItem('token') || localStorage.getItem('token');
