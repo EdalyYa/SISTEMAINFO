@@ -136,6 +136,9 @@ function ProgramCatalog() {
     autoplay: true,
     autoplaySpeed: 2000,
     pauseOnHover: true,
+    adaptiveHeight: true,
+    swipeToSlide: true,
+    touchMove: true,
     prevArrow: <PrevArrow />,
     nextArrow: <NextArrow />,
     responsive: [
@@ -158,7 +161,9 @@ function ProgramCatalog() {
         settings: { 
           slidesToShow: 1,
           arrows: false,
-          dots: true
+          dots: true,
+          centerMode: true,
+          centerPadding: '16px'
         },
       },
     ],
