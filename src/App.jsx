@@ -35,18 +35,11 @@ function App() {
 
   // El portal público no requiere sesión de usuario; dejamos solo lógica del modal.
 
-  // Mostrar el modal SOLO en Home ("/") y una vez por sesión
+  // Mostrar el modal SIEMPRE en Home ("/") cada vez que se ingrese
   useEffect(() => {
     const isHome = location.pathname === '/';
     if (!isHome) {
       // Al salir de Home, aseguramos que el modal no esté visible
-      setShowPromoModal(false);
-      return;
-    }
-
-    // Persistencia por sesión: si ya fue visto, no volver a abrir
-    const seen = sessionStorage.getItem('promoModalSeenSession') === 'true';
-    if (seen) {
       setShowPromoModal(false);
       return;
     }
@@ -58,10 +51,6 @@ function App() {
   }, [location.pathname]);
 
   const handleClosePromoModal = () => {
-    // Marcar como visto en esta sesión
-    try {
-      sessionStorage.setItem('promoModalSeenSession', 'true');
-    } catch {}
     setShowPromoModal(false);
   };
 

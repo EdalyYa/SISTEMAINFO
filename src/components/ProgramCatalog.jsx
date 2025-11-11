@@ -130,41 +130,42 @@ function ProgramCatalog() {
     dots: true,
     infinite: true,
     speed: 500,
+    // Defecto en desktops grandes
     slidesToShow: 4,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 2000,
+    autoplaySpeed: 2500,
     pauseOnHover: true,
     adaptiveHeight: true,
     swipeToSlide: true,
     touchMove: true,
     prevArrow: <PrevArrow />,
     nextArrow: <NextArrow />,
+    // Breakpoints por ancho máximo (no mobileFirst):
+    // <=1280: 4, <=1024: 3, <=768: 1
     responsive: [
       {
-        breakpoint: 1280, // xl y menores
+        breakpoint: 1280,
         settings: {
-          slidesToShow: 3,
+          slidesToShow: 4,
           arrows: true,
-          centerMode: false
-        }
+          centerMode: false,
+        },
       },
       {
         breakpoint: 1024,
-        settings: { 
-          slidesToShow: 2,
+        settings: {
+          slidesToShow: 3,
           arrows: true,
-          centerMode: false
+          centerMode: false,
         },
       },
       {
         breakpoint: 768,
-        settings: { 
-          slidesToShow: 1,
-          arrows: false,
-          dots: true,
+        settings: {
+          slidesToShow: 1, // móvil y tablets pequeñas: siempre 1
+          arrows: true,
           centerMode: false,
-          centerPadding: '0px'
         },
       },
     ],
