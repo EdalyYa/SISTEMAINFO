@@ -23,12 +23,16 @@ function Programas() {
   const [error, setError] = useState("");
 
   const ASSET_BASE = API_BASE.replace('/api', '');
+  const esImagen = (v) => /\.(png|jpe?g|webp|gif|svg)$/i.test(String(v || ''));
   const resolveImageUrl = (path) => {
     if (!path || typeof path !== 'string') return null;
     if (path.startsWith('http')) return path;
     if (path.includes('/uploads')) {
       const fixed = path.startsWith('/') ? path : `/${path}`;
       return `${ASSET_BASE}${fixed}`;
+    }
+    if (esImagen(path)) {
+      return `${ASSET_BASE}/uploads/programas/${path}`;
     }
     return path; // ya puede ser ruta relativa manejada por Vite
   };
@@ -37,7 +41,7 @@ function Programas() {
     const fetchProgramas = async () => {
       try {
         setError("");
-        const res = await fetch('http://localhost:4001/admin/programas/public');
+        const res = await fetch(`${ASSET_BASE}/admin/programas/public`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         // Normalizo campos a la UI actual

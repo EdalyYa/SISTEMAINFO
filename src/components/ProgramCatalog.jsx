@@ -65,6 +65,20 @@ function ProgramCatalog() {
       const BASE = API_BASE.replace('/api', '');
       const response = await fetch(`${BASE}/admin/programas/public`);
       const data = await response.json();
+      const esImagen = (v) => /\.(png|jpe?g|webp|gif|svg)$/i.test(String(v || ''));
+      const resolverImagenPrograma = (v) => {
+        if (!v) return Excel;
+        const val = String(v);
+        if (val.startsWith('http')) return val;
+        if (val.includes('/uploads')) {
+          const path = val.startsWith('/') ? val : `/${val}`;
+          return `${BASE}${path}`;
+        }
+        if (esImagen(val)) {
+          return `${BASE}/uploads/programas/${val}`;
+        }
+        return Excel;
+      };
       
       // Los programas ya vienen filtrados como activos desde el backend
       
@@ -76,10 +90,8 @@ function ProgramCatalog() {
         duration: program.duracion,
         modality: program.modalidad,
         price: program.precio,
-        // Si la imagen empieza con /uploads, usar la URL completa del backend, sino usar imagen por defecto
-        image: program.imagen && program.imagen.startsWith('/uploads') 
-          ? `${BASE}${program.imagen}` 
-          : (program.imagen || Excel),
+        // Resolver correctamente tanto rutas absolutas, relativas con /uploads, como nombres de archivo sueltos
+        image: resolverImagenPrograma(program.imagen),
         color: program.color || 'from-blue-500 to-indigo-600',
         icon: getIconByProgram(program.nombre)
       }));
