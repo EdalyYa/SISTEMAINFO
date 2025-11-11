@@ -1,13 +1,25 @@
 const mysql = require('mysql2/promise');
 
-// Crear pool de conexiones MySQL
+const {
+  DB_HOST = '127.0.0.1',
+  DB_PORT,
+  DB_USER = 'root',
+  DB_PASSWORD = '',
+  DB_NAME = 'infouna',
+  DB_CONN_LIMIT
+} = process.env;
+
+const port = DB_PORT ? Number(DB_PORT) : undefined;
+const connectionLimit = DB_CONN_LIMIT ? Number(DB_CONN_LIMIT) : 10;
+
 const pool = mysql.createPool({
-  host: '127.0.0.1',
-  user: 'root',
-  password: '',
-  database: 'infouna',
+  host: DB_HOST,
+  ...(port ? { port } : {}),
+  user: DB_USER,
+  password: DB_PASSWORD,
+  database: DB_NAME,
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit,
   queueLimit: 0
 });
 
