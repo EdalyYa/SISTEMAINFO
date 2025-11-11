@@ -19,9 +19,11 @@ const isLocalhost = typeof window !== 'undefined' && (
   window.location.hostname === '127.0.0.1'
 );
 
+// Producción: por defecto usar el backend oficial en Render
+// Puedes sobrescribirlo con la env `VITE_API_BASE_URL`
 export const API_BASE = (isDev && isLocalhost)
   ? 'http://localhost:4001/api'
-  : (envBase || 'https://backend-a9mk.onrender.com/api');
+  : (envBase || 'https://sistemainfo.onrender.com/api');
 
 // Base del host (sin /api) para endpoints de administración y archivos
 export const API_HOST = (API_BASE || '').replace(/\/?api\/?$/, '');
