@@ -23,10 +23,16 @@ const DescargaCertificado = () => {
   const [showRecModal, setShowRecModal] = useState(true);
 
   const HORARIO_LABEL = 'Lun–Vie 09:00–15:00';
-  const estaDentroHorario = () => {
+  // Evaluar horario en zona America/Lima para alinear con el backend
+  const getPeruDate = () => {
     const now = new Date();
-    const day = now.getDay(); // 0=Domingo, 1=Lunes, ... 6=Sábado
-    const hour = now.getHours();
+    const peruString = now.toLocaleString('en-US', { timeZone: 'America/Lima' });
+    return new Date(peruString);
+  };
+  const estaDentroHorario = () => {
+    const limaNow = getPeruDate();
+    const day = limaNow.getDay(); // 0=Domingo, 1=Lunes, ... 6=Sábado
+    const hour = limaNow.getHours();
     return day >= 1 && day <= 5 && hour >= 9 && hour < 15;
   };
   const fueraHorario = !estaDentroHorario();

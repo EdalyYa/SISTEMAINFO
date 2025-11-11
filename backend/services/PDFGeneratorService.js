@@ -19,6 +19,59 @@ class PDFGeneratorService {
   }
 
   /**
+   * Resuelve una ruta de activo que puede venir en distintos formatos
+   * Soporta:
+   *  - Rutas absolutas del backend: "/uploads/certificados/..."
+   *  - Rutas relativas: "plantillas/certificado_A4.png"
+   *  - Rutas ya relativas a uploads: "certificados/..."
+   * Retorna una ruta absoluta en disco dentro del backend.
+   */
+  _resolveUploadPath(spec) {
+    if (!spec || typeof spec !== 'string') return null;
+    const s = String(spec);
+    // Normalizar separadores para Windows/Linux
+    const normalized = s.replace(/\\/g, '/');
+    try {
+      if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+        // No soportamos cargar por HTTP en el servidor; se omite
+        return null;
+      }
+      const candidates = [];
+      const projectRoot = process.cwd ? process.cwd() : path.join(__dirname, '..');
+
+      if (normalized.startsWith('/uploads/')) {
+        const rel = normalized.replace(/^\//, '');
+        candidates.push(path.join(__dirname, '..', rel));
+        candidates.push(path.join(projectRoot, rel));
+        candidates.push(path.join(projectRoot, 'backend', rel));
+      } else if (normalized.startsWith('uploads/')) {
+        candidates.push(path.join(__dirname, '..', normalized));
+        candidates.push(path.join(projectRoot, normalized));
+        candidates.push(path.join(projectRoot, 'backend', normalized));
+      } else if (normalized.startsWith('certificados/')) {
+        candidates.push(path.join(__dirname, '..', 'uploads', normalized));
+        candidates.push(path.join(projectRoot, 'uploads', normalized));
+        candidates.push(path.join(projectRoot, 'backend', 'uploads', normalized));
+      } else {
+        // Caso general: asumir que es relativo a uploads/certificados
+        candidates.push(path.join(__dirname, '..', 'uploads', 'certificados', normalized));
+        candidates.push(path.join(projectRoot, 'uploads', 'certificados', normalized));
+        candidates.push(path.join(projectRoot, 'backend', 'uploads', 'certificados', normalized));
+      }
+
+      for (const candidate of candidates) {
+        if (candidate && fs.existsSync(candidate)) {
+          return candidate;
+        }
+      }
+      return null;
+    } catch (e) {
+      console.error('❌ Error resolviendo ruta de upload:', e);
+      return null;
+    }
+  }
+
+  /**
    * Valida los datos del certificado antes de generar el PDF
    * @param {Object} certificateData - Datos del certificado
    * @returns {Object} - Resultado de validación
@@ -167,12 +220,29 @@ class PDFGeneratorService {
   _renderBackground(doc, templateConfig, pageWidth, pageHeight) {
     if (templateConfig.fondo_certificado) {
       try {
-        const fondoPath = path.join(__dirname, '..', 'uploads', 'certificados', templateConfig.fondo_certificado);
-        if (fs.existsSync(fondoPath)) {
+        let fondoPath = this._resolveUploadPath(templateConfig.fondo_certificado);
+        if (!fondoPath || !fs.existsSync(fondoPath)) {
+          // Fallback robusto: intentar el fondo por defecto
+          const defaultSpecs = [
+            'plantillas/certificado_A4.png',
+            'certificados/plantillas/certificado_A4.png',
+            '/uploads/certificados/plantillas/certificado_A4.png'
+          ];
+        
+          for (const spec of defaultSpecs) {
+            const candidate = this._resolveUploadPath(spec);
+            if (candidate && fs.existsSync(candidate)) {
+              fondoPath = candidate;
+              break;
+            }
+          }
+        }
+
+        if (fondoPath && fs.existsSync(fondoPath)) {
           doc.image(fondoPath, 0, 0, { width: pageWidth, height: pageHeight });
-          console.log('✅ Fondo personalizado renderizado');
+          console.log('✅ Fondo renderizado');
         } else {
-          console.log('❌ Fondo no encontrado en:', fondoPath);
+          console.log('❌ No se pudo renderizar fondo. Verifique rutas y archivos.');
         }
       } catch (error) {
         console.error('❌ Error renderizando fondo:', error);
@@ -192,8 +262,19 @@ class PDFGeneratorService {
     // Logo izquierdo usando configuración
     if (templateConfig.logo_izquierdo && configuracion.logoIzquierdo) {
       try {
-        const logoPath = path.join(__dirname, '..', 'uploads', 'certificados', templateConfig.logo_izquierdo);
-        if (fs.existsSync(logoPath)) {
+        let logoPath = this._resolveUploadPath(templateConfig.logo_izquierdo);
+        if (!logoPath || !fs.existsSync(logoPath)) {
+          const fallbacks = [
+            'plantillas/logo_izquierdo.png',
+            'certificados/plantillas/logo_izquierdo.png',
+            '/uploads/certificados/plantillas/logo_izquierdo.png'
+          ];
+          for (const spec of fallbacks) {
+            const candidate = this._resolveUploadPath(spec);
+            if (candidate && fs.existsSync(candidate)) { logoPath = candidate; break; }
+          }
+        }
+        if (logoPath && fs.existsSync(logoPath)) {
           const logoConfig = configuracion.logoIzquierdo;
           doc.image(logoPath, logoConfig.x || 50, logoConfig.y || 50, {
             width: logoConfig.width || 80,
@@ -209,8 +290,19 @@ class PDFGeneratorService {
     // Logo derecho usando configuración
     if (templateConfig.logo_derecho && configuracion.logoDerecho) {
       try {
-        const logoPath = path.join(__dirname, '..', 'uploads', 'certificados', templateConfig.logo_derecho);
-        if (fs.existsSync(logoPath)) {
+        let logoPath = this._resolveUploadPath(templateConfig.logo_derecho);
+        if (!logoPath || !fs.existsSync(logoPath)) {
+          const fallbacks = [
+            'plantillas/logo_derecho.png',
+            'certificados/plantillas/logo_derecho.png',
+            '/uploads/certificados/plantillas/logo_derecho.png'
+          ];
+          for (const spec of fallbacks) {
+            const candidate = this._resolveUploadPath(spec);
+            if (candidate && fs.existsSync(candidate)) { logoPath = candidate; break; }
+          }
+        }
+        if (logoPath && fs.existsSync(logoPath)) {
           const logoConfig = configuracion.logoDerecho;
           doc.image(logoPath, logoConfig.x || (pageWidth - 130), logoConfig.y || 50, {
             width: logoConfig.width || 80,

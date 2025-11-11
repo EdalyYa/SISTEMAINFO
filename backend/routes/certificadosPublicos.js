@@ -6,12 +6,23 @@ const fs = require('fs');
 const path = require('path');
 const PDFGeneratorService = require('../services/PDFGeneratorService');
 
-// Horario de atención: Lunes-Viernes 08:00–18:00
-const HORARIO_LABEL = 'Lun-Vie 09:00-15:00';
-const dentroHorario = () => {
+// Horario de atención: Lunes-Viernes 09:00–15:00 (zona America/Lima)
+// Desactivado por defecto; se puede activar con CERT_HORARIO_ENABLED=true
+const HORARIO_LABEL = process.env.CERT_HORARIO_LABEL || 'Lun-Vie 09:00-15:00';
+const HORARIO_ENABLED = String(process.env.CERT_HORARIO_ENABLED ?? 'false') === 'true';
+
+// Obtiene fecha/hora en la zona horaria de Lima sin depender del timezone del servidor
+const getPeruDate = () => {
   const now = new Date();
-  const day = now.getDay(); // 0=Domingo, 1=Lunes, ... 6=Sábado
-  const hour = now.getHours();
+  const peruString = now.toLocaleString('en-US', { timeZone: 'America/Lima' });
+  return new Date(peruString);
+};
+
+const dentroHorario = () => {
+  if (!HORARIO_ENABLED) return true;
+  const limaNow = getPeruDate();
+  const day = limaNow.getDay(); // 0=Domingo, 1=Lunes, ... 6=Sábado
+  const hour = limaNow.getHours();
   return day >= 1 && day <= 5 && hour >= 9 && hour < 15;
 };
 
@@ -19,7 +30,11 @@ const dentroHorario = () => {
 router.get('/verificar/:codigo', async (req, res) => {
   try {
     if (!dentroHorario()) {
-      return res.status(403).json({ error: 'Servicio fuera de horario de atención', horario: HORARIO_LABEL });
+      return res.status(403).json({ 
+        error: 'Servicio fuera de horario de atención', 
+        horario: HORARIO_LABEL,
+        server_time_peru: new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' })
+      });
     }
     const { codigo } = req.params;
     
