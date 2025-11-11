@@ -131,7 +131,7 @@ function ProgramCatalog() {
     dots: true,
     infinite: true,
     speed: 500,
-    slidesToShow: 1,
+    slidesToShow: 4,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 2000,
@@ -145,7 +145,7 @@ function ProgramCatalog() {
       {
         breakpoint: 1280, // xl y menores
         settings: {
-          slidesToShow: 1,
+          slidesToShow: 3,
           arrows: true,
           centerMode: false
         }
@@ -153,7 +153,7 @@ function ProgramCatalog() {
       {
         breakpoint: 1024,
         settings: { 
-          slidesToShow: 1,
+          slidesToShow: 2,
           arrows: true,
           centerMode: false
         },
