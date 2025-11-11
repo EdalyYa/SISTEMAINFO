@@ -62,7 +62,10 @@ app.use('/api', videosInformativosRoutes);
 app.use(express.json());
 
 // Servir archivos estáticos para las imágenes subidas
+// Algunos módulos guardan en backend/uploads y otros en ../uploads (raíz del repo).
+// Para compatibilidad en producción, exponemos ambos bajo el mismo prefijo.
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Configuración de subida de imágenes para cursos
 const cursosStorage = multer.diskStorage({
