@@ -31,6 +31,8 @@ const PromoModal = ({ isOpen, onClose }) => {
       setLoading(false);
       return;
     }
+    // Importante: marcar como cargando antes de iniciar la petición
+    setLoading(true);
     const fetchPromos = async () => {
       try {
         const response = await fetch(`${API_BASE}/modal-promocional`);
@@ -66,14 +68,8 @@ const PromoModal = ({ isOpen, onClose }) => {
     fetchPromos();
   }, [isOpen]);
 
-  // Si no hay promociones después de cargar, cerrar el modal automáticamente
-  useEffect(() => {
-    if (!loading && isOpen && promos.length === 0) {
-      try {
-        onClose && onClose();
-      } catch (_) {}
-    }
-  }, [loading, isOpen, promos]);
+  // Mantener el modal visible aunque no haya promociones: se mostrará el estado vacío
+  // Evita autocierre prematuro cuando la API cambia de vacío a datos poco después
 
   // Auto-slide cada 5 segundos (pausa cuando el cursor está sobre el modal)
   useEffect(() => {

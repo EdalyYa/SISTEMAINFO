@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import HomePage from "./pages/HomePage";
 import BlogNoticiasPage from "./pages/BlogNoticias";
 import FAQPage from "./pages/FAQ";
@@ -31,19 +31,37 @@ import InstitucionalPoliticas from "./pages/InstitucionalPoliticas";
 
 function App() {
   const [showPromoModal, setShowPromoModal] = useState(false);
+  const location = useLocation();
 
   // El portal público no requiere sesión de usuario; dejamos solo lógica del modal.
 
-  // Mostrar modal promocional solo al refrescar el navegador
+  // Mostrar el modal SOLO en Home ("/") y una vez por sesión
   useEffect(() => {
-    // Mostrar el modal SIEMPRE al entrar a la página (sin session gating)
+    const isHome = location.pathname === '/';
+    if (!isHome) {
+      // Al salir de Home, aseguramos que el modal no esté visible
+      setShowPromoModal(false);
+      return;
+    }
+
+    // Persistencia por sesión: si ya fue visto, no volver a abrir
+    const seen = sessionStorage.getItem('promoModalSeenSession') === 'true';
+    if (seen) {
+      setShowPromoModal(false);
+      return;
+    }
+
     const timer = setTimeout(() => {
       setShowPromoModal(true);
     }, 1200);
     return () => clearTimeout(timer);
-  }, []);
+  }, [location.pathname]);
 
   const handleClosePromoModal = () => {
+    // Marcar como visto en esta sesión
+    try {
+      sessionStorage.setItem('promoModalSeenSession', 'true');
+    } catch {}
     setShowPromoModal(false);
   };
 
