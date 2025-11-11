@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: infouna-backend
+    ports:
+      - "4010:4001"
+    environment:
+      - PORT=4001
+      # Configura CORS para permitir el frontend servido en localhost:8080
+      - CORS_ORIGINS=http://localhost:8080
+      # Clave opcional para noticias reales
+      - NEWS_API_KEY=
+      # Configuración de MySQL (contenedor 'infouna-db')
+      - DB_DISABLE=false
+      - DB_HOST=infouna-db
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_NAME=infouna
+      - DB_CONN_LIMIT=10
+    volumes:
+      # Persistencia de subidas y PDFs generados
+      - ./backend/uploads:/app/uploads
+      - ./backend/public/certificados:/app/public/certificados
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        # El frontend hablará con el backend en el host local
+        VITE_API_BASE_URL: http://localhost:4010/api
+    container_name: infouna-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+  db:
+    image: mysql:8.0
+    container_name: infouna-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=infouna
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      # Inicializa la base con tu dump exportado
+      - ./dataNov09.sql:/docker-entrypoint-initdb.d/01-init.sql
+
+volumes:
+  db_data:
+    driver: local

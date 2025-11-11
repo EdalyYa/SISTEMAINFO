@@ -1,0 +1,31 @@
+{
+  # Opcional: logs
+  # log {
+  #   output file /var/log/caddy/access.log
+  # }
+}
+
+{$DOMAIN} {
+  encode gzip
+  # Sirve el frontend (Nginx en el contenedor) por HTTP
+  reverse_proxy infouna-frontend:80
+}
+
+{$API_DOMAIN} {
+  encode gzip
+  # Proxy al backend Node/Express
+  reverse_proxy infouna-backend:4001
+
+  # CORS básico permitiendo el dominio principal
+  @preflight {
+    method OPTIONS
+  }
+  header {
+    Access-Control-Allow-Origin "https://{$DOMAIN}"
+    Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    Access-Control-Allow-Headers "Content-Type, Authorization"
+    Access-Control-Allow-Credentials "true"
+  }
+  respond @preflight 204
+}
+
