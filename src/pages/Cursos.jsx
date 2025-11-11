@@ -190,12 +190,24 @@ function Cursos() {
     return l || 'Nivel';
   };
 
+  // Base del host (por ejemplo, https://sistemainfo.onrender.com)
+  const ASSET_BASE = API_BASE.replace('/api', '');
+  const esNombreDeImagen = (v) => typeof v === 'string' && /\.(png|jpg|jpeg|gif|webp)$/i.test(v);
   const resolveImageUrl = (path) => {
-    if (!path) return null;
-    if (typeof path !== 'string') return null;
-    if (path.startsWith('http')) return path;
-    // Backend sirve /uploads; aseguramos prefijo correcto
-    return `http://localhost:4001${path.startsWith('/') ? path : '/' + path}`;
+    if (!path || typeof path !== 'string') return null;
+    const v = String(path);
+    if (v.startsWith('http')) return v;
+    // Si viene como "/uploads/..." construir URL absoluta
+    if (v.includes('/uploads')) {
+      const fixed = v.startsWith('/') ? v : `/${v}`;
+      return `${ASSET_BASE}${fixed}`;
+    }
+    // Si sólo es nombre de archivo, asumir carpeta conocida en backend
+    if (esNombreDeImagen(v)) {
+      // Preferimos carpeta de cursos; si no existe en backend, el navegador devolverá 404.
+      return `${ASSET_BASE}/uploads/cursos/${v}`;
+    }
+    return null;
   };
 
   useEffect(() => {
@@ -217,6 +229,7 @@ function Cursos() {
                 courses: []
               };
             }
+            const rawImage = curso.icono || curso.imagen;
             programsMap[programName].courses.push({
               id: curso.id,
               name: curso.nombre,
@@ -228,7 +241,7 @@ function Cursos() {
               program: programName,
               price: curso.precio || 0,
               description: curso.descripcion || '',
-              image: resolveImageUrl(curso.imagen) || infoLogo,
+              image: resolveImageUrl(rawImage) || infoLogo,
             });
           });
           

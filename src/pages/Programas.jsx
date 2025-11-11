@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_BASE } from '../config/api';
 import ExcelImg from '../Imagenes/Excel.png';
 import IAImg from '../Imagenes/InteligenciaArtificial.png';
 import BDImg from '../Imagenes/BasedeDatos.png';
@@ -21,11 +22,15 @@ function Programas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const ASSET_BASE = API_BASE.replace('/api', '');
   const resolveImageUrl = (path) => {
-    if (!path) return null;
-    if (typeof path !== 'string') return null;
+    if (!path || typeof path !== 'string') return null;
     if (path.startsWith('http')) return path;
-    return `http://localhost:4001${path.startsWith('/') ? path : '/' + path}`;
+    if (path.includes('/uploads')) {
+      const fixed = path.startsWith('/') ? path : `/${path}`;
+      return `${ASSET_BASE}${fixed}`;
+    }
+    return path; // ya puede ser ruta relativa manejada por Vite
   };
 
   useEffect(() => {
@@ -80,7 +85,7 @@ function Programas() {
                 {/* Imagen a un costado */}
                 {program.image ? (
                   <div className="md:w-5/12 bg-white flex items-center justify-center p-2">
-                    <img src={program.image} alt={program.title} className="w-full max-h-40 md:max-h-32 object-contain" />
+                    <img src={resolveImageUrl(program.image) || program.image} alt={program.title} className="w-full max-h-40 md:max-h-32 object-contain" />
                   </div>
                 ) : (
                   <div className="md:w-5/12 h-36 bg-gradient-to-r from-blue-900 to-blue-700 flex items-center justify-center">
