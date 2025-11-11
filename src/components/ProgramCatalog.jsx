@@ -61,6 +61,13 @@ function ProgramCatalog() {
     fetchPrograms();
   }, []);
 
+  // Fallback local para verificar el diseño cuando la API falla
+  const defaultPrograms = [
+    { id: 1, title: 'Especialista en Excel', description: 'Mejora tus habilidades en hojas de cálculo y análisis de datos', duration: '4 meses', modality: 'virtual', price: '180', image: Excel, color: 'from-blue-500 to-indigo-600', icon: <FaChartBar className="text-3xl" /> },
+    { id: 2, title: 'Ciberseguridad y Redes', description: 'Administra redes y refuerza la seguridad informática', duration: '6 meses', modality: 'presencial', price: '250', image: BasedeDatos, color: 'from-blue-500 to-indigo-600', icon: <FaShieldAlt className="text-3xl" /> },
+    { id: 3, title: 'Inteligencia Artificial', description: 'Introducción y aplicaciones prácticas de IA', duration: '5 meses', modality: 'virtual', price: '220', image: InteligenciaArtificial, color: 'from-blue-500 to-indigo-600', icon: <FaBrain className="text-3xl" /> },
+  ];
+
   const fetchPrograms = async () => {
     try {
       const BASE = API_BASE.replace('/api', '');
@@ -71,36 +78,39 @@ function ProgramCatalog() {
         if (!v) return Excel;
         const val = String(v);
         if (val.startsWith('http')) return val;
+        // Si es una ruta local de Vite/estático, devolver tal cual
+        if (val.startsWith('/src/') || val.startsWith('/assets/')) return val;
         if (val.includes('/uploads')) {
           const path = val.startsWith('/') ? val : `/${val}`;
           return `${BASE}${path}`;
         }
-        if (esImagen(val)) {
-          return `${BASE}/uploads/programas/${val}`;
-        }
+        // Si parece nombre de archivo simple (desde BD), construir ruta en uploads
+        if (esImagen(val)) return `${BASE}/uploads/programas/${val}`;
         return Excel;
       };
       
       // Los programas ya vienen filtrados como activos desde el backend
-      
-      // Mapear los datos de la API al formato esperado por el componente
-      const mappedPrograms = data.map(program => ({
+      // Si la respuesta no es un array, usar el fallback local para mantener el layout funcional
+      const source = Array.isArray(data) ? data : defaultPrograms;
+
+      // Mapear los datos de la API (o fallback) al formato esperado por el componente
+      const mappedPrograms = source.map(program => ({
         id: program.id,
-        title: program.nombre,
-        description: program.descripcion,
-        duration: program.duracion,
-        modality: program.modalidad,
-        price: program.precio,
+        title: program.nombre || program.title,
+        description: program.descripcion || program.description,
+        duration: program.duracion || program.duration,
+        modality: program.modalidad || program.modality,
+        price: program.precio || program.price,
         // Resolver correctamente tanto rutas absolutas, relativas con /uploads, como nombres de archivo sueltos
-        image: resolverImagenPrograma(program.imagen),
+        image: resolverImagenPrograma(program.imagen || program.image),
         color: program.color || 'from-blue-500 to-indigo-600',
-        icon: getIconByProgram(program.nombre)
+        icon: program.icon || getIconByProgram(program.nombre || program.title)
       }));
       
       setPrograms(mappedPrograms);
     } catch (error) {
       console.error('Error al cargar programas:', error);
-      setPrograms([]); // Array vacío si hay error
+      setPrograms(defaultPrograms); // Fallback para mantener el catálogo visible
     } finally {
       setLoading(false);
     }
