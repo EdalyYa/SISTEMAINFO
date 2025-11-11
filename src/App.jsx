@@ -51,6 +51,9 @@ function App() {
     <Routes>
       {/* Rutas del panel administrativo - completamente separadas (evitar conflicto con proxy /admin) */}
       <Route path="/panel/*" element={<AdminApp />} />
+      {/* Compatibilidad: redirigir /admin (y subrutas) al login del panel */}
+      <Route path="/admin" element={<Navigate to="/panel/login" replace />} />
+      <Route path="/admin/*" element={<Navigate to="/panel/login" replace />} />
       
       {/* Rutas del sitio web principal */}
       <Route path="/*" element={
