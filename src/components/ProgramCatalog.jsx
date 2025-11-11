@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../config/api';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import Slider from 'react-slick';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -78,14 +79,12 @@ function ProgramCatalog() {
         if (!v) return Excel;
         const val = String(v);
         if (val.startsWith('http')) return val;
-        // Si es una ruta local de Vite/estático, devolver tal cual
-        if (val.startsWith('/src/') || val.startsWith('/assets/')) return val;
-        if (val.includes('/uploads')) {
-          const path = val.startsWith('/') ? val : `/${val}`;
-          return `${BASE}${path}`;
+        // Reescribir rutas del backend o del frontend estático
+        if (val.startsWith('/src/') || val.startsWith('/assets/') || val.includes('/uploads')) {
+          return resolveAssetUrl(val);
         }
         // Si parece nombre de archivo simple (desde BD), construir ruta en uploads
-        if (esImagen(val)) return `${BASE}/uploads/programas/${val}`;
+        if (esImagen(val)) return resolveAssetUrl(`/uploads/programas/${val}`);
         return Excel;
       };
       

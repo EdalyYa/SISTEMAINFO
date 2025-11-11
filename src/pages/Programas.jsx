@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { API_BASE } from '../config/api';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import ExcelImg from '../Imagenes/Excel.png';
 import IAImg from '../Imagenes/InteligenciaArtificial.png';
 import BDImg from '../Imagenes/BasedeDatos.png';
@@ -26,20 +27,16 @@ function Programas() {
   const esImagen = (v) => /\.(png|jpe?g|webp|gif|svg)$/i.test(String(v || ''));
   const resolveImageUrl = (path) => {
     if (!path || typeof path !== 'string') return null;
-    if (path.startsWith('http')) return path;
-    // Compatibilidad con datos antiguos que usan rutas absolutas del frontend
-    if (path.startsWith('/src/Imagenes')) {
-      const fixed = path.startsWith('/') ? path : `/${path}`;
-      return `${ASSET_BASE}${fixed}`;
+    const v = String(path);
+    if (v.startsWith('http')) return v;
+    // Compatibilidad con datos antiguos y backend
+    if (v.startsWith('/src/Imagenes') || v.includes('/uploads')) {
+      return resolveAssetUrl(v);
     }
-    if (path.includes('/uploads')) {
-      const fixed = path.startsWith('/') ? path : `/${path}`;
-      return `${ASSET_BASE}${fixed}`;
+    if (esImagen(v)) {
+      return resolveAssetUrl(`/uploads/programas/${v}`);
     }
-    if (esImagen(path)) {
-      return `${ASSET_BASE}/uploads/programas/${path}`;
-    }
-    return path; // ya puede ser ruta relativa manejada por Vite
+    return v; // ya puede ser ruta relativa manejada por Vite
   };
 
   useEffect(() => {

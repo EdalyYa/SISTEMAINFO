@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE } from '../config/api';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import { Link } from 'react-router-dom';
 import courseImg1 from '../Imagenes/cursos/course1.jpg';
 import courseImg2 from '../Imagenes/cursos/course2.jpg';
@@ -134,7 +135,6 @@ function CarouselCursos({ cursos: cursosProp, title = 'Cursos Destacados', hideH
   }, [loading, cursos.length, itemWidth, isPaused, direction, itemsPerView]);
 
   // Helpers para mostrar imagen real del curso
-  const ASSET_BASE = API_BASE.replace('/api', '');
   const esImagen = (valor) => /\.(png|jpg|jpeg|gif|webp)$/i.test(String(valor || ''));
   const obtenerImagenPorCategoria = (categoria) => {
     const mapping = {
@@ -157,13 +157,13 @@ function CarouselCursos({ cursos: cursosProp, title = 'Cursos Destacados', hideH
   const resolverImagenCurso = (curso) => {
     const v = curso?.icono || '';
     if (!v) return obtenerImagenPorCategoria(curso.categoria);
-    if (String(v).startsWith('http')) return v;
-    if (String(v).includes('/uploads')) {
-      const path = String(v).startsWith('/') ? String(v) : `/${String(v)}`;
-      return `${ASSET_BASE}${path}`;
+    const val = String(v);
+    if (val.startsWith('http')) return val;
+    if (val.includes('/uploads') || val.includes('/src/Imagenes')) {
+      return resolveAssetUrl(val);
     }
-    if (esImagen(v)) {
-      return `${ASSET_BASE}/uploads/cursos_libres/${v}`;
+    if (esImagen(val)) {
+      return resolveAssetUrl(`/uploads/cursos_libres/${val}`);
     }
     return obtenerImagenPorCategoria(curso.categoria);
   };

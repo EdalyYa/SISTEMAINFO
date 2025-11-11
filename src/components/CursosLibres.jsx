@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { API_BASE } from '../config/api';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import courseImg1 from '../Imagenes/cursos/course1.jpg';
 import courseImg2 from '../Imagenes/cursos/course2.jpg';
 import courseImg3 from '../Imagenes/cursos/course3.jpg';
@@ -110,7 +111,6 @@ const CursosLibres = () => {
     return mapping[categoria] || courseImg1;
   };
 
-  const ASSET_BASE = API_BASE.replace('/api', '');
   const esImagen = (valor) => typeof valor === 'string' && /\.(png|jpg|jpeg|gif)$/i.test(valor);
   // Corrige problemas de codificación (mojibake) en textos con acentos
   const fixMojibake = (s) => {
@@ -125,13 +125,13 @@ const CursosLibres = () => {
   const resolverImagenCurso = (curso) => {
     const v = curso?.icono || '';
     if (!v) return obtenerImagenPorCategoria(curso.categoria);
-    if (v.startsWith('http')) return v;
-    if (v.includes('/uploads')) {
-      const path = v.startsWith('/') ? v : `/${v}`;
-      return `${ASSET_BASE}${path}`;
+    const val = String(v);
+    if (val.startsWith('http')) return val;
+    if (val.includes('/uploads') || val.includes('/src/Imagenes')) {
+      return resolveAssetUrl(val);
     }
-    if (esImagen(v) || v.length > 0) {
-      return `${ASSET_BASE}/uploads/cursos_libres/${v}`;
+    if (esImagen(val) || val.length > 0) {
+      return resolveAssetUrl(`/uploads/cursos_libres/${val}`);
     }
     return obtenerImagenPorCategoria(curso.categoria);
   };

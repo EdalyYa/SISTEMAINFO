@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { API_BASE } from '../config/api';
+import { resolveAssetUrl } from '../utils/assetUrl';
 import { FaFilter, FaSearch } from 'react-icons/fa';
 import infoLogo from '../logo.png';
 
@@ -190,22 +191,18 @@ function Cursos() {
     return l || 'Nivel';
   };
 
-  // Base del host (por ejemplo, https://sistemainfo.onrender.com)
-  const ASSET_BASE = API_BASE.replace('/api', '');
   const esNombreDeImagen = (v) => typeof v === 'string' && /\.(png|jpg|jpeg|gif|webp)$/i.test(v);
   const resolveImageUrl = (path) => {
     if (!path || typeof path !== 'string') return null;
     const v = String(path);
     if (v.startsWith('http')) return v;
-    // Si viene como "/uploads/..." construir URL absoluta
-    if (v.includes('/uploads')) {
-      const fixed = v.startsWith('/') ? v : `/${v}`;
-      return `${ASSET_BASE}${fixed}`;
+    // Si viene como "/uploads/..." o "/src/Imagenes/..." usar backend
+    if (v.includes('/uploads') || v.includes('/src/Imagenes')) {
+      return resolveAssetUrl(v);
     }
     // Si sólo es nombre de archivo, asumir carpeta conocida en backend
     if (esNombreDeImagen(v)) {
-      // Preferimos carpeta de cursos; si no existe en backend, el navegador devolverá 404.
-      return `${ASSET_BASE}/uploads/cursos/${v}`;
+      return resolveAssetUrl(`/uploads/cursos/${v}`);
     }
     return null;
   };
