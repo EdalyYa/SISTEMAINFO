@@ -4,22 +4,19 @@ const bcrypt = require('bcrypt');
 const express = require('express');
 const router = express.Router();
 
-const JWT_SECRET = 'your_jwt_secret_here'; // Change to env variable in production
+const { JWT_SECRET } = require('./config/secrets');
 
-// Function to create or update admin user with given credentials
 async function createOrUpdateAdminUser(pool) {
-  const username = 'infoadmin';
-  const password = 'infouna2025';
-  const full_name = 'Administrador';
-  const email = 'admin@infouna.edu.pe';
-  const role = 'admin';
-
+  const username = process.env.ADMIN_USERNAME;
+  const password = process.env.ADMIN_PASSWORD;
+  const full_name = process.env.ADMIN_NAME || 'Administrador';
+  const email = process.env.ADMIN_EMAIL;
+  const role = process.env.ADMIN_ROLE || 'admin';
+  if (!username || !password || !email) return;
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    // Buscar por username o email
     const [rows] = await pool.query('SELECT * FROM users WHERE username = ? OR email = ?', [username, email]);
     if (rows.length === 0) {
-      // Insertar si no existe
       try {
         await pool.query(
           'INSERT INTO users (username, password_hash, name, email, role) VALUES (?, ?, ?, ?, ?)',
@@ -37,7 +34,6 @@ async function createOrUpdateAdminUser(pool) {
       }
       console.log('Admin user created');
     } else {
-      // Actualizar si ya existe por username o email
       try {
         await pool.query(
           'UPDATE users SET username = ?, password_hash = ?, name = ?, role = ? WHERE email = ?',
@@ -140,30 +136,6 @@ function authorizeRoles(...roles) {
     next();
   };
 }
-
-  // Debug endpoint to list all users (remove in production)
-  router.get('/debug-users', async (req, res) => {
-    try {
-      const [rows] = await pool.query('SELECT id, username, email, COALESCE(name, full_name) AS full_name, role, password_hash FROM users');
-      res.json(rows);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      res.status(500).json({ error: 'Error fetching users' });
-    }
-  });
-
-  // Debug endpoint to reset admin password (remove in production)
-  router.post('/reset-admin-password', async (req, res) => {
-    const newPassword = 'infouna2025';
-    try {
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await pool.query('UPDATE users SET password_hash = ? WHERE username = ?', [hashedPassword, 'infoadmin']);
-      res.json({ message: 'Admin password reset to default.' });
-    } catch (error) {
-      console.error('Error resetting admin password:', error);
-      res.status(500).json({ error: 'Error resetting password' });
-    }
-  });
 
   return { router, authenticateToken, authorizeRoles };
 };

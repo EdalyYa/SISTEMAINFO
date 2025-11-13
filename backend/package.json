@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "apply-config": "node scripts/update_design_config_from_file.js --file=uploads/certificados/plantillas/config_certiinfo.json",
+    "watch-config": "node scripts/watch_apply_config.js --file=uploads/certificados/plantillas/config_certiinfo.json"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

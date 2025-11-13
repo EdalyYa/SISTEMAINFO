@@ -42,57 +42,62 @@ const upload = multer({
 
 // Middleware para campos múltiples
 const uploadFields = upload.fields([
-  { name: 'logoIzquierdo', maxCount: 1 },
-  { name: 'logoDerecho', maxCount: 1 },
   { name: 'fondoCertificado', maxCount: 1 }
 ]);
 
 // GET - Obtener todas las configuraciones de diseño
+// Actualizado: prioriza columnas nuevas (campos_json, fondo_url, incluye_qr) si existen.
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const query = `
-      SELECT id, nombre, configuracion, logo_izquierdo, logo_derecho, fondo_certificado, 
-             created_at, updated_at
-      FROM disenos_certificados 
-      ORDER BY created_at DESC
-    `;
-    
-    const [rows] = await db.execute(query);
-    
-    // Procesar las configuraciones para incluir URLs completas de imágenes
-    const configuraciones = rows.map(row => {
-      let configuracion;
+    // Intentar leer columnas nuevas; si falla, caer a antiguas
+    let rows;
+    try {
+      const [r] = await db.execute(`
+        SELECT id, nombre, campos_json, fondo_url, incluye_qr,
+               configuracion, fondo_certificado,
+               created_at, updated_at
+        FROM disenos_certificados
+        ORDER BY created_at DESC
+      `);
+      rows = r;
+    } catch (_) {
+      const [r] = await db.execute(`
+        SELECT id, nombre, configuracion, fondo_certificado,
+               created_at, updated_at
+        FROM disenos_certificados
+        ORDER BY created_at DESC
+      `);
+      rows = r;
+    }
+
+    const parseJsonSafe = (val) => {
       try {
-        // Si ya es un objeto, usarlo directamente; si es string, parsearlo
-        configuracion = typeof row.configuracion === 'string' 
-          ? JSON.parse(row.configuracion) 
-          : row.configuracion;
-      } catch (error) {
-        console.error('Error parsing configuracion for row:', row.id, error);
-        // Configuración por defecto si hay error
-        configuracion = {
-          titulo: { x: 400, y: 200, fontSize: 32, color: '#000000' },
-          nombreEstudiante: { x: 400, y: 280, fontSize: 24, color: '#000000' },
-          descripcion: { x: 400, y: 350, fontSize: 16, color: '#000000' },
-          fecha: { x: 400, y: 400, fontSize: 14, color: '#000000' },
-          codigo: { x: 400, y: 450, fontSize: 12, color: '#000000' },
-          logoIzquierdo: { x: 50, y: 50, width: 100, height: 100 },
-          logoDerecho: { x: 650, y: 50, width: 100, height: 100 }
-        };
+        return typeof val === 'string' ? JSON.parse(val) : (val || {});
+      } catch (err) {
+        return {};
       }
-      
+    };
+
+    const configuraciones = rows.map((row) => {
+      const cfg = row.campos_json !== undefined
+        ? parseJsonSafe(row.campos_json)
+        : parseJsonSafe(row.configuracion);
+      const fondoUrl = row.fondo_url
+        || (row.fondo_certificado ? `/uploads/certificados/${row.fondo_certificado}` : null);
+
       return {
         id: row.id,
         nombre: row.nombre,
-        configuracion: configuracion,
-        logoIzquierdo: row.logo_izquierdo ? `/uploads/certificados/${row.logo_izquierdo}` : null,
-        logoDerecho: row.logo_derecho ? `/uploads/certificados/${row.logo_derecho}` : null,
-        fondoCertificado: row.fondo_certificado ? `/uploads/certificados/${row.fondo_certificado}` : null,
+        // homogéneo: el frontend usa "configuracion"
+        configuracion: cfg,
+        // mantener compatibilidad con UI actual
+        fondoCertificado: fondoUrl,
+        incluye_qr: row.incluye_qr !== undefined ? !!row.incluye_qr : true,
         created_at: row.created_at,
         updated_at: row.updated_at
       };
     });
-    
+
     res.json(configuraciones);
   } catch (error) {
     console.error('Error al obtener configuraciones:', error);
@@ -104,43 +109,57 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const query = `
-      SELECT id, nombre, configuracion, logo_izquierdo, logo_derecho, fondo_certificado,
-             created_at, updated_at
-      FROM disenos_certificados 
-      WHERE id = ?
-    `;
-    
-    const [rows] = await db.execute(query, [id]);
-    
+    // Intentar leer nuevas columnas si existen; fallback a antiguas
+    let rows;
+    try {
+      const [r] = await db.execute(
+        `SELECT id, nombre, campos_json, fondo_url, incluye_qr,
+                fondo_certificado,
+                configuracion,
+                created_at, updated_at
+         FROM disenos_certificados WHERE id = ?`,
+        [id]
+      );
+      rows = r;
+    } catch (e) {
+      const [r] = await db.execute(
+        `SELECT id, nombre, configuracion, fondo_certificado,
+                created_at, updated_at
+         FROM disenos_certificados WHERE id = ?`,
+        [id]
+      );
+      rows = r;
+    }
+
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Configuración no encontrada' });
     }
-    
+
     const row = rows[0];
-    
-    // Manejar el parsing de configuracion de forma segura
-    let parsedConfiguracion;
-    try {
-      parsedConfiguracion = typeof row.configuracion === 'string' ? JSON.parse(row.configuracion) : row.configuracion;
-    } catch (error) {
-      console.error('Error al parsear configuracion:', error);
-      parsedConfiguracion = {}; // Configuración por defecto
-    }
-    
-    const configuracion = {
+    const parseJsonSafe = (val) => {
+      try {
+        return typeof val === 'string' ? JSON.parse(val) : (val || {});
+      } catch (err) {
+        console.error('Error al parsear JSON de diseño:', err);
+        return {};
+      }
+    };
+    const camposJson = row.campos_json !== undefined ? parseJsonSafe(row.campos_json) : parseJsonSafe(row.configuracion);
+    const fondoUrl = row.fondo_url || (row.fondo_certificado ? `/uploads/certificados/${row.fondo_certificado}` : null);
+
+    const payload = {
       id: row.id,
       nombre: row.nombre,
-      configuracion: parsedConfiguracion,
-      logoIzquierdo: row.logo_izquierdo ? `/uploads/certificados/${row.logo_izquierdo}` : null,
-      logoDerecho: row.logo_derecho ? `/uploads/certificados/${row.logo_derecho}` : null,
+      campos_json: camposJson,
+      configuracion: camposJson,
+      incluye_qr: row.incluye_qr !== undefined ? !!row.incluye_qr : true,
+      fondoUrl,
       fondoCertificado: row.fondo_certificado ? `/uploads/certificados/${row.fondo_certificado}` : null,
       created_at: row.created_at,
       updated_at: row.updated_at
     };
-    
-    res.json(configuracion);
+
+    res.json(payload);
   } catch (error) {
     console.error('Error al obtener configuración:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -178,42 +197,63 @@ router.post('/upload', authenticateToken, (req, res) => {
 // POST - Crear nueva configuración de diseño con URLs
 router.post('/save-with-urls', authenticateToken, async (req, res) => {
   try {
-    const { nombre, configuracion, logoIzquierdo, logoDerecho, fondoCertificado, activa } = req.body;
-    
-    if (!nombre || !configuracion) {
-      return res.status(400).json({ error: 'Nombre y configuración son requeridos' });
+    const { nombre, configuracion, campos_json, fondoCertificado, fondo_url, activa, incluye_qr } = req.body;
+    const configToUse = (campos_json ?? configuracion);
+    if (!nombre || !configToUse) {
+      return res.status(400).json({ error: 'Nombre y configuración (campos_json) son requeridos' });
     }
-    
+
     // Extraer solo el nombre del archivo de las URLs
-    const logoIzquierdoFilename = logoIzquierdo ? logoIzquierdo.replace('/uploads/certificados/', '') : null;
-    const logoDerechoFilename = logoDerecho ? logoDerecho.replace('/uploads/certificados/', '') : null;
     const fondoCertificadoFilename = fondoCertificado ? fondoCertificado.replace('/uploads/certificados/', '') : null;
-    
-    const query = `
-       INSERT INTO disenos_certificados 
-       (nombre, configuracion, logo_izquierdo, logo_derecho, fondo_certificado, activa, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
-     `;
-     
-     const [result] = await db.execute(query, [
-       nombre,
-       JSON.stringify(configuracion),
-       logoIzquierdoFilename,
-       logoDerechoFilename,
-       fondoCertificadoFilename,
-       activa || 0
-     ]);
-     
-     res.status(201).json({
-       success: true,
-       message: 'Configuración creada exitosamente',
-       id: result.insertId
-     });
-   } catch (error) {
-     console.error('Error al crear configuración:', error);
-     res.status(500).json({ error: 'Error interno del servidor' });
-   }
- });
+
+    // Detectar columnas nuevas en tabla
+    let hasNewCols = false;
+    try {
+      const [cols] = await db.execute(`SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'disenos_certificados' AND COLUMN_NAME IN ('campos_json','fondo_url','incluye_qr')`);
+      hasNewCols = Array.isArray(cols) && cols.length >= 1;
+    } catch (_) {}
+
+    let result;
+    if (hasNewCols) {
+      const insertQuery = `
+        INSERT INTO disenos_certificados 
+        (nombre, campos_json, fondo_url, incluye_qr, fondo_certificado, activa, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+      `;
+      const [r] = await db.execute(insertQuery, [
+        nombre,
+        JSON.stringify(configToUse),
+        fondo_url || (fondoCertificadoFilename ? `/uploads/certificados/${fondoCertificadoFilename}` : null),
+        incluye_qr === undefined ? 1 : (incluye_qr ? 1 : 0),
+        fondoCertificadoFilename,
+        activa || 0
+      ]);
+      result = r;
+    } else {
+      const insertQuery = `
+        INSERT INTO disenos_certificados 
+        (nombre, configuracion, fondo_certificado, activa, created_at, updated_at)
+        VALUES (?, ?, ?, ?, NOW(), NOW())
+      `;
+      const [r] = await db.execute(insertQuery, [
+        nombre,
+        JSON.stringify(configToUse),
+        fondoCertificadoFilename,
+        activa || 0
+      ]);
+      result = r;
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Configuración creada exitosamente',
+      id: result.insertId
+    });
+  } catch (error) {
+    console.error('Error al crear configuración:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
  
  // POST - Crear nueva configuración de diseño (ruta original con FormData)
  router.post('/', authenticateToken, (req, res) => {
@@ -231,21 +271,17 @@ router.post('/save-with-urls', authenticateToken, async (req, res) => {
        }
        
        // Obtener nombres de archivos subidos
-       const logoIzquierdo = req.files?.logoIzquierdo?.[0]?.filename || null;
-       const logoDerecho = req.files?.logoDerecho?.[0]?.filename || null;
        const fondoCertificado = req.files?.fondoCertificado?.[0]?.filename || null;
        
        const query = `
          INSERT INTO disenos_certificados 
-         (nombre, configuracion, logo_izquierdo, logo_derecho, fondo_certificado, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+         (nombre, configuracion, fondo_certificado, created_at, updated_at)
+         VALUES (?, ?, ?, NOW(), NOW())
        `;
       
       const [result] = await db.execute(query, [
         nombre,
         typeof configuracion === 'string' ? configuracion : JSON.stringify(configuracion),
-        logoIzquierdo,
-        logoDerecho,
         fondoCertificado
       ]);
       
@@ -253,8 +289,6 @@ router.post('/save-with-urls', authenticateToken, async (req, res) => {
         id: result.insertId,
         nombre,
         configuracion: typeof configuracion === 'string' ? JSON.parse(configuracion) : configuracion,
-        logoIzquierdo: logoIzquierdo ? `/uploads/certificados/${logoIzquierdo}` : null,
-        logoDerecho: logoDerecho ? `/uploads/certificados/${logoDerecho}` : null,
         fondoCertificado: fondoCertificado ? `/uploads/certificados/${fondoCertificado}` : null,
         message: 'Configuración guardada exitosamente'
       });
@@ -270,10 +304,11 @@ router.post('/save-with-urls', authenticateToken, async (req, res) => {
 router.put('/update-with-urls/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, configuracion, logoIzquierdo, logoDerecho, fondoCertificado, activa } = req.body;
+    const { nombre, configuracion, campos_json, fondoCertificado, fondo_url, activa, incluye_qr } = req.body;
+    const configToUse = (campos_json ?? configuracion);
     
-    if (!nombre || !configuracion) {
-      return res.status(400).json({ error: 'Nombre y configuración son requeridos' });
+    if (!nombre || !configToUse) {
+      return res.status(400).json({ error: 'Nombre y configuración (campos_json) son requeridos' });
     }
     
     // Verificar si la configuración existe
@@ -285,25 +320,44 @@ router.put('/update-with-urls/:id', authenticateToken, async (req, res) => {
     }
     
     // Extraer solo el nombre del archivo de las URLs
-    const logoIzquierdoFilename = logoIzquierdo ? logoIzquierdo.replace('/uploads/certificados/', '') : null;
-    const logoDerechoFilename = logoDerecho ? logoDerecho.replace('/uploads/certificados/', '') : null;
     const fondoCertificadoFilename = fondoCertificado ? fondoCertificado.replace('/uploads/certificados/', '') : null;
-    
-    const updateQuery = `
-      UPDATE disenos_certificados 
-      SET nombre = ?, configuracion = ?, logo_izquierdo = ?, logo_derecho = ?, fondo_certificado = ?, activa = ?, updated_at = NOW()
-      WHERE id = ?
-    `;
-    
-    await db.execute(updateQuery, [
-      nombre,
-      JSON.stringify(configuracion),
-      logoIzquierdoFilename,
-      logoDerechoFilename,
-      fondoCertificadoFilename,
-      activa || 0,
-      id
-    ]);
+
+    // Detectar columnas nuevas
+    let hasNewCols = false;
+    try {
+      const [cols] = await db.execute(`SELECT COLUMN_NAME FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'disenos_certificados' AND COLUMN_NAME IN ('campos_json','fondo_url','incluye_qr')`);
+      hasNewCols = Array.isArray(cols) && cols.length >= 1;
+    } catch (_) {}
+
+    if (hasNewCols) {
+      const updateQuery = `
+        UPDATE disenos_certificados 
+        SET nombre = ?, campos_json = ?, fondo_url = ?, incluye_qr = ?, fondo_certificado = ?, activa = ?, updated_at = NOW()
+        WHERE id = ?
+      `;
+      await db.execute(updateQuery, [
+        nombre,
+        JSON.stringify(configToUse),
+        fondo_url || (fondoCertificadoFilename ? `/uploads/certificados/${fondoCertificadoFilename}` : null),
+        incluye_qr === undefined ? 1 : (incluye_qr ? 1 : 0),
+        fondoCertificadoFilename,
+        activa || 0,
+        id
+      ]);
+    } else {
+      const updateQuery = `
+        UPDATE disenos_certificados 
+        SET nombre = ?, configuracion = ?, fondo_certificado = ?, activa = ?, updated_at = NOW()
+        WHERE id = ?
+      `;
+      await db.execute(updateQuery, [
+        nombre,
+        JSON.stringify(configToUse),
+        fondoCertificadoFilename,
+        activa || 0,
+        id
+      ]);
+    }
     
     res.json({
       success: true,
@@ -340,24 +394,12 @@ router.put('/:id', authenticateToken, (req, res) => {
       }
       
       // Obtener nombres de archivos subidos (si hay nuevos)
-      const logoIzquierdo = req.files?.logoIzquierdo?.[0]?.filename || existing[0].logo_izquierdo;
-      const logoDerecho = req.files?.logoDerecho?.[0]?.filename || existing[0].logo_derecho;
+      const logoIzquierdo = null;
+      const logoDerecho = null;
       const fondoCertificado = req.files?.fondoCertificado?.[0]?.filename || existing[0].fondo_certificado;
       
       // Si hay archivos nuevos, eliminar los antiguos
-      if (req.files?.logoIzquierdo && existing[0].logo_izquierdo) {
-        const oldPath = path.join(__dirname, '../uploads/certificados', existing[0].logo_izquierdo);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
-      
-      if (req.files?.logoDerecho && existing[0].logo_derecho) {
-        const oldPath = path.join(__dirname, '../uploads/certificados', existing[0].logo_derecho);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
+      // Campos de logos eliminados: no se procesan ni se borran
       
       if (req.files?.fondoCertificado && existing[0].fondo_certificado) {
         const oldPath = path.join(__dirname, '../uploads/certificados', existing[0].fondo_certificado);
@@ -368,7 +410,7 @@ router.put('/:id', authenticateToken, (req, res) => {
       
       const updateQuery = `
         UPDATE disenos_certificados 
-        SET nombre = ?, configuracion = ?, logo_izquierdo = ?, logo_derecho = ?, 
+        SET nombre = ?, configuracion = ?, 
             fondo_certificado = ?, updated_at = NOW()
         WHERE id = ?
       `;
@@ -376,8 +418,6 @@ router.put('/:id', authenticateToken, (req, res) => {
       await db.execute(updateQuery, [
         nombre,
         typeof configuracion === 'string' ? configuracion : JSON.stringify(configuracion),
-        logoIzquierdo,
-        logoDerecho,
         fondoCertificado,
         id
       ]);
@@ -386,8 +426,6 @@ router.put('/:id', authenticateToken, (req, res) => {
         id: parseInt(id),
         nombre,
         configuracion: typeof configuracion === 'string' ? JSON.parse(configuracion) : configuracion,
-        logoIzquierdo: logoIzquierdo ? `/uploads/certificados/${logoIzquierdo}` : null,
-        logoDerecho: logoDerecho ? `/uploads/certificados/${logoDerecho}` : null,
         fondoCertificado: fondoCertificado ? `/uploads/certificados/${fondoCertificado}` : null,
         message: 'Configuración actualizada exitosamente'
       });
@@ -415,7 +453,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     const config = rows[0];
     
     // Eliminar archivos asociados
-    const filesToDelete = [config.logo_izquierdo, config.logo_derecho, config.fondo_certificado]
+    const filesToDelete = [config.fondo_certificado]
       .filter(filename => filename);
     
     filesToDelete.forEach(filename => {
@@ -462,45 +500,80 @@ router.put('/:id/activar', authenticateToken, async (req, res) => {
   }
 });
 
-// GET - Obtener configuración activa (la más reciente o marcada como activa)
+// GET - Obtener configuración activa (preferir marcada como activa; si no, la más reciente)
 router.get('/activa/current', authenticateToken, async (req, res) => {
   try {
-    const query = `
-      SELECT id, nombre, configuracion, logo_izquierdo, logo_derecho, fondo_certificado
-      FROM disenos_certificados 
-      ORDER BY updated_at DESC 
-      LIMIT 1
-    `;
-    
-    const [rows] = await db.execute(query);
-    
-    if (rows.length === 0) {
+    // Intentar obtener columnas nuevas, fallback a antiguas
+    let activeRows;
+    try {
+      const [r] = await db.execute(`
+        SELECT id, nombre, campos_json, fondo_url, incluye_qr, fondo_certificado, configuracion
+        FROM disenos_certificados 
+        WHERE activa = TRUE
+        ORDER BY updated_at DESC 
+        LIMIT 1
+      `);
+      activeRows = r;
+    } catch (_) {
+      const [r] = await db.execute(`
+        SELECT id, nombre, configuracion, fondo_certificado
+        FROM disenos_certificados 
+        WHERE activa = TRUE
+        ORDER BY updated_at DESC 
+        LIMIT 1
+      `);
+      activeRows = r;
+    }
+
+    let row = activeRows[0];
+    // Si no hay activa, tomar la más reciente
+    if (!row) {
+      try {
+        const [latestRows] = await db.execute(`
+          SELECT id, nombre, campos_json, fondo_url, incluye_qr, fondo_certificado, configuracion
+          FROM disenos_certificados 
+          ORDER BY updated_at DESC 
+          LIMIT 1
+        `);
+        row = latestRows[0];
+      } catch (_) {
+        const [latestRows] = await db.execute(`
+          SELECT id, nombre, configuracion, fondo_certificado
+          FROM disenos_certificados 
+          ORDER BY updated_at DESC 
+          LIMIT 1
+        `);
+        row = latestRows[0];
+      }
+    }
+
+    if (!row) {
       return res.json(null); // No hay configuraciones guardadas
     }
-    
-    const row = rows[0];
-    
-    // Verificar si configuracion ya es un objeto o necesita parsing
-    let configuracionParsed;
-    try {
-      configuracionParsed = typeof row.configuracion === 'string' 
-        ? JSON.parse(row.configuracion) 
-        : row.configuracion;
-    } catch (parseError) {
-      console.error('Error parsing configuracion:', parseError);
-      configuracionParsed = {};
-    }
-    
-    const configuracion = {
+
+    // Parsear JSON seguros
+    const parseJsonSafe = (val) => {
+      try {
+        return typeof val === 'string' ? JSON.parse(val) : (val || {});
+      } catch (err) {
+        console.error('Error parsing configuracion activa:', err);
+        return {};
+      }
+    };
+    const camposJson = row.campos_json !== undefined ? parseJsonSafe(row.campos_json) : parseJsonSafe(row.configuracion);
+    const fondoUrl = row.fondo_url || (row.fondo_certificado ? `/uploads/certificados/${row.fondo_certificado}` : null);
+
+    const payload = {
       id: row.id,
       nombre: row.nombre,
-      configuracion: configuracionParsed,
-      logoIzquierdo: row.logo_izquierdo ? `/uploads/certificados/${row.logo_izquierdo}` : null,
-      logoDerecho: row.logo_derecho ? `/uploads/certificados/${row.logo_derecho}` : null,
+      campos_json: camposJson,
+      configuracion: camposJson,
+      incluye_qr: row.incluye_qr !== undefined ? !!row.incluye_qr : true,
+      fondoUrl,
       fondoCertificado: row.fondo_certificado ? `/uploads/certificados/${row.fondo_certificado}` : null
     };
-    
-    res.json(configuracion);
+
+    res.json(payload);
   } catch (error) {
     console.error('Error al obtener configuración activa:', error);
     res.status(500).json({ error: 'Error interno del servidor' });

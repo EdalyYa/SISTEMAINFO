@@ -3,12 +3,14 @@ import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, XCircle, Download, F
 import * as XLSX from 'xlsx';
 import api from '../../config/api';
 
-const ExcelImporter = ({ onAfterProcess }) => {
+const ExcelImporter = ({ onAfterProcess, defaultDesignName, defaultDesignId }) => {
   const [archivos, setArchivos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [processingId, setProcessingId] = useState(null);
   const [processResult, setProcessResult] = useState(null);
+  const [parsedCertificados, setParsedCertificados] = useState([]);
+  const [lastParsedFileName, setLastParsedFileName] = useState('');
 
   // Columnas esperadas en el Excel
   const columnasRequeridas = [
@@ -47,6 +49,71 @@ const ExcelImporter = ({ onAfterProcess }) => {
     const formData = new FormData();
     formData.append('excel', file);
     try {
+      // Parsear en cliente para habilitar "Generar lote" directo
+      try {
+        const reader = new FileReader();
+        const parsePromise = new Promise((resolve, reject) => {
+          reader.onload = (evt) => {
+            try {
+              const data = new Uint8Array(evt.target.result);
+              const workbook = XLSX.read(data, { type: 'array' });
+              const firstSheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[firstSheetName];
+              // Obtener filas crudas
+              const raw = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+              if (!raw || raw.length < 2) {
+                resolve([]);
+                return;
+              }
+              const headers = raw[0].map(h => String(h).trim().toUpperCase());
+              const normalizer = {
+                'DNI': 'dni',
+                'APELLIDO PATERNO': 'apellido_paterno',
+                'APELLIDO MATERNO': 'apellido_materno',
+                'NOMBRES': 'nombres',
+                'TIPO CERTIFICADO': 'tipo_certificado',
+                'NOMBRE EVENTO': 'nombre_evento',
+                'DESCRIPCION EVENTO': 'descripcion_evento',
+                'FECHA INICIO': 'fecha_inicio',
+                'FECHA FIN': 'fecha_fin',
+                'HORAS ACADEMICAS': 'horas_academicas',
+                'CORREO ELECTRONICO': 'correo_electronico',
+              };
+              const colIndexes = headers.map(h => normalizer[h] || null);
+              const required = ['dni','apellido_paterno','apellido_materno','nombres','tipo_certificado','nombre_evento','fecha_inicio','fecha_fin','horas_academicas','correo_electronico'];
+              const hasRequired = required.every(req => colIndexes.includes(req));
+              if (!hasRequired) {
+                console.warn('Columnas requeridas no presentes para generación en lote.');
+              }
+              const items = [];
+              for (let r = 1; r < raw.length; r++) {
+                const row = raw[r];
+                const obj = {};
+                for (let c = 0; c < colIndexes.length; c++) {
+                  const key = colIndexes[c];
+                  if (!key) continue;
+                  obj[key] = String(row[c] ?? '').trim();
+                }
+                if (!obj.dni) continue; // filtrar filas vacías
+                items.push(obj);
+              }
+              resolve(items);
+            } catch (parseErr) {
+              reject(parseErr);
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsArrayBuffer(file);
+        });
+        const parsed = await parsePromise;
+        setParsedCertificados(parsed);
+        setLastParsedFileName(file.name || '');
+      } catch (clientParseError) {
+        console.warn('Fallo al parsear Excel en cliente:', clientParseError);
+        setParsedCertificados([]);
+        setLastParsedFileName('');
+      }
+
       await api.post('/certificados-masivos/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -67,7 +134,8 @@ const ExcelImporter = ({ onAfterProcess }) => {
     setProcessingId(id);
     setProcessResult(null);
     try {
-      const response = await api.post(`/certificados-masivos/procesar/${id}`);
+      const query = defaultDesignId ? `?disenoId=${encodeURIComponent(defaultDesignId)}` : '';
+      const response = await api.post(`/certificados-masivos/procesar/${id}${query}`);
       setProcessResult(response.data);
       fetchArchivos();
       if (typeof onAfterProcess === 'function') {
@@ -94,6 +162,39 @@ const ExcelImporter = ({ onAfterProcess }) => {
       fetchArchivos();
     } catch (error) {
       console.error('Error deleting:', error);
+    }
+  };
+
+  // Generar lote directamente usando el archivo parseado en cliente
+  const handleGenerateLote = async () => {
+    if (!parsedCertificados || parsedCertificados.length === 0) {
+      alert('Primero sube un archivo válido para generar el lote.');
+      return;
+    }
+    setProcessingId('generate');
+    setProcessResult(null);
+    try {
+      const query = typeof defaultDesignId === 'number' && !Number.isNaN(defaultDesignId)
+        ? `?disenoId=${encodeURIComponent(defaultDesignId)}`
+        : '';
+      const response = await api.post(`/certificados-masivos/generar-lote${query}`, {
+        certificados: parsedCertificados
+      });
+      setProcessResult(response.data);
+      if (typeof onAfterProcess === 'function') {
+        try { onAfterProcess(); } catch (e) { /* no-op */ }
+      }
+    } catch (error) {
+      console.error('Error generating lote:', error);
+      const data = error.response?.data;
+      setProcessResult({
+        success: false,
+        message: data?.error || error.message,
+        errores: data?.errores || [],
+        resumen: data?.resumen || null
+      });
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -187,6 +288,42 @@ const ExcelImporter = ({ onAfterProcess }) => {
                 Descargar plantilla CSV
               </button>
               <p className="text-[11px] text-gray-500 mt-0.5">Incluye formato y ejemplos de datos</p>
+              {defaultDesignName && (
+                <p className="text-[11px] text-blue-700 mt-1">
+                  Se usará por defecto la plantilla: <span className="font-semibold">{defaultDesignName}</span>
+                </p>
+              )}
+              {typeof defaultDesignId === 'number' && !Number.isNaN(defaultDesignId) && (
+                <p className="text-[11px] text-blue-700 mt-0.5">
+                  ID de diseño aplicado al procesar: <span className="font-semibold">#{defaultDesignId}</span>
+                </p>
+              )}
+              {parsedCertificados && parsedCertificados.length > 0 && (
+                <div className="mt-1">
+                  <button
+                    onClick={handleGenerateLote}
+                    disabled={processingId === 'generate'}
+                    className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors inline-flex items-center ${
+                      processingId === 'generate' ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    }`}
+                  >
+                    {processingId === 'generate' ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Generando lote...
+                      </>
+                    ) : (
+                      <>
+                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                        Generar lote (usar diseño)
+                      </>
+                    )}
+                  </button>
+                  {lastParsedFileName && (
+                    <p className="text-[11px] text-gray-600 mt-0.5">Fuente: {lastParsedFileName}</p>
+                  )}
+                </div>
+              )}
           </div>
         </div>
 

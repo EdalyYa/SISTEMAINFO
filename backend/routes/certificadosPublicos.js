@@ -5,6 +5,7 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const PDFGeneratorService = require('../services/PDFGeneratorService');
+const CertificateRenderService = require('../services/CertificateRenderService');
 
 // Horario de atención: Lunes-Viernes 09:00–15:00 (zona America/Lima)
 // Desactivado por defecto; se puede activar con CERT_HORARIO_ENABLED=true
@@ -38,20 +39,41 @@ router.get('/verificar/:codigo', async (req, res) => {
     }
     const { codigo } = req.params;
     
-    const query = `
-      SELECT 
-        c.*,
-        dc.nombre as diseno_nombre,
-        dc.configuracion,
-        dc.logo_izquierdo,
-        dc.logo_derecho,
-        dc.fondo_certificado
-      FROM certificados c
-      LEFT JOIN disenos_certificados dc ON CAST(SUBSTRING(c.plantilla_certificado, 8, LENGTH(c.plantilla_certificado) - 11) AS UNSIGNED) = dc.id
-      WHERE c.codigo_verificacion = ?
-    `;
-    
-    const [rows] = await db.execute(query, [codigo]);
+    let rows;
+    try {
+      const queryNew = `
+        SELECT 
+          c.*,
+          dc.nombre as diseno_nombre,
+          dc.configuracion,
+          dc.fondo_certificado
+        FROM certificados c
+        LEFT JOIN disenos_certificados dc ON COALESCE(
+          c.diseno_id,
+          CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(c.plantilla_certificado, '.', 1), 'diseno_', -1) AS UNSIGNED)
+        ) = dc.id
+        WHERE c.codigo_verificacion = ?
+      `;
+      const [r] = await db.execute(queryNew, [codigo]);
+      rows = r;
+    } catch (_) {
+      const queryOld = `
+        SELECT 
+          c.*,
+          dc.nombre as diseno_nombre,
+          dc.configuracion,
+          dc.fondo_certificado
+        FROM certificados c
+        LEFT JOIN disenos_certificados dc ON 
+          CAST(
+            SUBSTRING_INDEX(SUBSTRING_INDEX(c.plantilla_certificado, '.', 1), 'diseno_', -1)
+            AS UNSIGNED
+          ) = dc.id
+        WHERE c.codigo_verificacion = ?
+      `;
+      const [r] = await db.execute(queryOld, [codigo]);
+      rows = r;
+    }
     
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Certificado no encontrado' });
@@ -72,8 +94,6 @@ router.get('/verificar/:codigo', async (req, res) => {
       diseno: {
         nombre: certificado.diseno_nombre,
         configuracion: certificado.configuracion ? JSON.parse(certificado.configuracion) : null,
-        logo_izquierdo: certificado.logo_izquierdo,
-        logo_derecho: certificado.logo_derecho,
         fondo_certificado: certificado.fondo_certificado
       }
     };
@@ -93,6 +113,19 @@ router.get('/descargar/:codigo', async (req, res) => {
       return res.status(403).json({ error: 'Servicio fuera de horario de atención', horario: HORARIO_LABEL });
     }
     const { codigo } = req.params;
+    const quick = await CertificateRenderService.renderByCode(db, codigo);
+    if (quick) {
+      res.setHeader('Content-Type', 'application/pdf');
+      const forceDownload = String(req.query.download || '').trim() === '1' || String(req.query.download || '').toLowerCase() === 'true';
+      res.setHeader('Content-Disposition', `${forceDownload ? 'attachment' : 'inline'}; filename="${quick.fileName}"`);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Last-Modified', new Date().toUTCString());
+      res.setHeader('ETag', `"${Date.now()}-${Math.random()}"`);
+      res.setHeader('X-PDF-Generated', new Date().toISOString());
+      return res.send(quick.buffer);
+    }
     
     // DEBUG: Log de la solicitud
     console.log('🔍 SOLICITUD DE DESCARGA PÚBLICA:');
@@ -102,23 +135,25 @@ router.get('/descargar/:codigo', async (req, res) => {
     console.log('  - Timestamp:', new Date().toISOString());
     
     // Buscar certificado con su diseño personalizado (misma query que admin)
-    const query = `
-      SELECT 
-        c.dni,
-        c.nombre_completo,
-        c.tipo_certificado,
-        c.nombre_evento,
-        c.descripcion_evento,
-        c.fecha_inicio,
-        c.fecha_fin,
-        c.horas_academicas,
-        c.codigo_verificacion,
-        c.plantilla_certificado,
-        dc.configuracion,
-        dc.logo_izquierdo,
-        dc.logo_derecho,
-        dc.fondo_certificado,
-        CONCAT(
+    let certificados;
+    try {
+      const queryNew = `
+        SELECT 
+          c.dni,
+          c.nombre_completo,
+          c.tipo_certificado,
+          c.nombre_evento,
+          c.descripcion_evento,
+          c.fecha_inicio,
+          c.fecha_fin,
+          c.horas_academicas,
+          c.codigo_verificacion,
+          c.plantilla_certificado,
+          dc.campos_json,
+          dc.configuracion,
+          dc.fondo_url,
+          dc.fondo_certificado,
+          CONCAT(
           'del ', DAY(c.fecha_inicio), 
           CASE 
             WHEN MONTH(c.fecha_inicio) = MONTH(c.fecha_fin) AND YEAR(c.fecha_inicio) = YEAR(c.fecha_fin)
@@ -168,12 +203,95 @@ router.get('/descargar/:codigo', async (req, res) => {
               END, ' del año ', YEAR(c.fecha_fin))
           END
         ) as periodo_evento
-      FROM certificados c
-      LEFT JOIN disenos_certificados dc ON CAST(SUBSTRING(c.plantilla_certificado, 8, LENGTH(c.plantilla_certificado) - 11) AS UNSIGNED) = dc.id
-      WHERE c.codigo_verificacion = ? AND c.activo = 1
-    `;
-    
-    const [certificados] = await db.execute(query, [codigo]);
+        FROM certificados c
+        LEFT JOIN disenos_certificados dc ON COALESCE(
+          c.diseno_id,
+          CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(c.plantilla_certificado, '.', 1), 'diseno_', -1) AS UNSIGNED)
+        ) = dc.id
+        WHERE c.codigo_verificacion = ? AND c.activo = 1
+      `;
+      const [r] = await db.execute(queryNew, [codigo]);
+      certificados = r;
+    } catch (_) {
+      const queryOld = `
+        SELECT 
+          c.dni,
+          c.nombre_completo,
+          c.tipo_certificado,
+          c.nombre_evento,
+          c.descripcion_evento,
+          c.fecha_inicio,
+          c.fecha_fin,
+          c.horas_academicas,
+          c.codigo_verificacion,
+          c.plantilla_certificado,
+          dc.campos_json,
+          dc.configuracion,
+          dc.fondo_url,
+          dc.fondo_certificado,
+          CONCAT(
+            'del ', DAY(c.fecha_inicio), 
+            CASE 
+              WHEN MONTH(c.fecha_inicio) = MONTH(c.fecha_fin) AND YEAR(c.fecha_inicio) = YEAR(c.fecha_fin)
+              THEN CONCAT(' al ', DAY(c.fecha_fin), ' de ',
+                CASE MONTH(c.fecha_inicio)
+                  WHEN 1 THEN 'enero'
+                  WHEN 2 THEN 'febrero'
+                  WHEN 3 THEN 'marzo'
+                  WHEN 4 THEN 'abril'
+                  WHEN 5 THEN 'mayo'
+                  WHEN 6 THEN 'junio'
+                  WHEN 7 THEN 'julio'
+                  WHEN 8 THEN 'agosto'
+                  WHEN 9 THEN 'septiembre'
+                  WHEN 10 THEN 'octubre'
+                  WHEN 11 THEN 'noviembre'
+                  WHEN 12 THEN 'diciembre'
+                END, ' del año ', YEAR(c.fecha_inicio))
+              ELSE CONCAT(' de ',
+                CASE MONTH(c.fecha_inicio)
+                  WHEN 1 THEN 'enero'
+                  WHEN 2 THEN 'febrero'
+                  WHEN 3 THEN 'marzo'
+                  WHEN 4 THEN 'abril'
+                  WHEN 5 THEN 'mayo'
+                  WHEN 6 THEN 'junio'
+                  WHEN 7 THEN 'julio'
+                  WHEN 8 THEN 'agosto'
+                  WHEN 9 THEN 'septiembre'
+                  WHEN 10 THEN 'octubre'
+                  WHEN 11 THEN 'noviembre'
+                  WHEN 12 THEN 'diciembre'
+                END, ' al ', DAY(c.fecha_fin), ' de ',
+                CASE MONTH(c.fecha_fin)
+                  WHEN 1 THEN 'enero'
+                  WHEN 2 THEN 'febrero'
+                  WHEN 3 THEN 'marzo'
+                  WHEN 4 THEN 'abril'
+                  WHEN 5 THEN 'mayo'
+                  WHEN 6 THEN 'junio'
+                  WHEN 7 THEN 'julio'
+                  WHEN 8 THEN 'agosto'
+                  WHEN 9 THEN 'septiembre'
+                  WHEN 10 THEN 'octubre'
+                  WHEN 11 THEN 'noviembre'
+                  WHEN 12 THEN 'diciembre'
+                END, ' del año ', YEAR(c.fecha_fin))
+            END
+          ) as periodo_evento
+        FROM certificados c
+        LEFT JOIN disenos_certificados dc ON 
+          CAST(
+            SUBSTRING_INDEX(
+              SUBSTRING_INDEX(c.plantilla_certificado, '.', 1),
+              'diseno_', -1
+            ) AS UNSIGNED
+          ) = dc.id
+        WHERE c.codigo_verificacion = ? AND c.activo = 1
+      `;
+      const [r] = await db.execute(queryOld, [codigo]);
+      certificados = r;
+    }
     
     if (certificados.length === 0) {
       return res.status(404).json({ error: 'Certificado no encontrado o inactivo' });
@@ -181,13 +299,11 @@ router.get('/descargar/:codigo', async (req, res) => {
     
     const certificado = certificados[0];
     
-    // Preparar configuración de plantilla
-    // Preparar configuración de plantilla con fallback a certiinfo.png
+    // Preparar configuración de plantilla (preferir campos_json/fondo_url)
+    const safeParse = (val) => { try { return typeof val === 'string' ? JSON.parse(val) : (val || null); } catch { return null; } };
     let templateConfig = {
-      configuracion: certificado.configuracion,
-      logo_izquierdo: certificado.logo_izquierdo,
-      logo_derecho: certificado.logo_derecho,
-      fondo_certificado: certificado.fondo_certificado
+      configuracion: certificado.campos_json ? safeParse(certificado.campos_json) : safeParse(certificado.configuracion),
+      fondo_certificado: certificado.fondo_url || certificado.fondo_certificado
     };
 
     if (!templateConfig.fondo_certificado) {
@@ -262,21 +378,45 @@ router.get('/debug/:codigo', async (req, res) => {
     });
     
     // Buscar certificado
-    const query = `
-      SELECT 
-        c.codigo_verificacion,
-        c.nombre_completo,
-        c.nombre_evento,
-        dc.configuracion IS NOT NULL as tiene_configuracion,
-        dc.fondo_certificado IS NOT NULL as tiene_fondo,
-        dc.logo_izquierdo IS NOT NULL as tiene_logo_izq,
-        dc.logo_derecho IS NOT NULL as tiene_logo_der
-      FROM certificados c
-      LEFT JOIN disenos_certificados dc ON CAST(SUBSTRING(c.plantilla_certificado, 8, LENGTH(c.plantilla_certificado) - 11) AS UNSIGNED) = dc.id
-      WHERE c.codigo_verificacion = ? AND c.activo = 1
-    `;
-    
-    const [certificados] = await db.execute(query, [codigo]);
+    let certificados;
+    try {
+      const queryNew = `
+        SELECT 
+          c.codigo_verificacion,
+          c.nombre_completo,
+          c.nombre_evento,
+          dc.configuracion IS NOT NULL as tiene_configuracion,
+          dc.fondo_certificado IS NOT NULL as tiene_fondo
+        FROM certificados c
+        LEFT JOIN disenos_certificados dc ON COALESCE(
+          c.diseno_id,
+          CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(c.plantilla_certificado, '.', 1), 'diseno_', -1) AS UNSIGNED)
+        ) = dc.id
+        WHERE c.codigo_verificacion = ? AND c.activo = 1
+      `;
+      const [r] = await db.execute(queryNew, [codigo]);
+      certificados = r;
+    } catch (_) {
+      const queryOld = `
+        SELECT 
+          c.codigo_verificacion,
+          c.nombre_completo,
+          c.nombre_evento,
+          dc.configuracion IS NOT NULL as tiene_configuracion,
+          dc.fondo_certificado IS NOT NULL as tiene_fondo
+        FROM certificados c
+        LEFT JOIN disenos_certificados dc ON 
+          CAST(
+            SUBSTRING_INDEX(
+              SUBSTRING_INDEX(c.plantilla_certificado, '.', 1),
+              'diseno_', -1
+            ) AS UNSIGNED
+          ) = dc.id
+        WHERE c.codigo_verificacion = ? AND c.activo = 1
+      `;
+      const [r] = await db.execute(queryOld, [codigo]);
+      certificados = r;
+    }
     
     if (certificados.length === 0) {
       return res.json({ error: 'Certificado no encontrado', codigo });
@@ -291,9 +431,7 @@ router.get('/debug/:codigo', async (req, res) => {
         nombre: cert.nombre_completo,
         evento: cert.nombre_evento,
         tiene_configuracion: !!cert.tiene_configuracion,
-        tiene_fondo: !!cert.tiene_fondo,
-        tiene_logo_izq: !!cert.tiene_logo_izq,
-        tiene_logo_der: !!cert.tiene_logo_der
+        tiene_fondo: !!cert.tiene_fondo
       },
       timestamp: new Date().toISOString(),
       backend_version: 'v2.0-fixed'

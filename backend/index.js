@@ -5,15 +5,14 @@ const bcrypt = require('bcrypt');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-const adminCertificadosRoutes = require('./routes/adminCertificados');
-const disenosCertificadosRoutes = require('./routes/disenosCertificados');
-const certificadosPublicosRoutes = require('./routes/certificadosPublicos');
-const certificadosMasivosRoutes = require('./routes/certificadosMasivos');
+// Rutas V1 de certificados desactivadas
 const programasRoutes = require('./programas');
 const horariosRoutes = require('./routes/horarios');
 const cursosLibresRoutes = require('./routes/cursosLibres');
 const modalPromocionalRoutes = require('./routes/modalPromocional');
 const documentosRoutes = require('./routes/documentos');
+const certificadosV2Routes = require('./routes/certificadosV2');
+const adminCertificadosRoutes = require('./routes/adminCertificados');
 const cifrasLogrosRoutes = require('./routes/cifrasLogros');
 const configuracionRoutes = require('./configuracion');
 const enrollmentVideosRoutes = require('./routes/enrollmentVideos');
@@ -103,8 +102,26 @@ const uploadCursoImagen = multer({
 // Usa backend/config/database.js para centralizar configuración y compatibilidad con Render
 const { pool } = require('./config/database');
 
-// JWT secret key
-const JWT_SECRET = 'your_jwt_secret_here';
+const { JWT_SECRET } = require('./config/secrets');
+
+async function ensureSecureUserSchema() {
+  try {
+    const [columns] = await pool.query('SHOW COLUMNS FROM users');
+    const names = Array.isArray(columns) ? columns.map(c => c.Field) : [];
+    if (names.includes('password')) {
+      console.error('Esquema inseguro: columna legacy users.password detectada');
+      throw new Error('Elimina users.password y usa users.password_hash');
+    }
+    if (!names.includes('password_hash')) {
+      throw new Error('Esquema inválido: falta users.password_hash');
+    }
+  } catch (err) {
+    console.error('Fallo verificación de esquema de usuarios:', err.message || err);
+    throw err;
+  }
+}
+
+ensureSecureUserSchema().catch(() => process.exit(1));
 
 // Mount auth module router under /api/auth
 const authModule = require('./auth')(pool);
@@ -130,19 +147,7 @@ function authenticateToken(req, res, next) {
 
 // Routes
 
-// Use certificate admin routes
-app.use('/admin/certificados', adminCertificadosRoutes);
-// Compatibilidad: también exponer bajo prefijo /api para clientes que usan /api/admin/certificados
-app.use('/api/admin/certificados', adminCertificadosRoutes);
-
-// Use certificate design routes
-app.use('/admin/certificados/disenos', disenosCertificadosRoutes);
-
-// Use public certificate routes (no authentication required)
-app.use('/api/certificados-publicos', certificadosPublicosRoutes);
-
-// Use massive certificates routes
-app.use('/api/certificados-masivos', certificadosMasivosRoutes);
+// Certificados V1 desactivados en favor de V2 (rutas anteriores removidas)
 
 // Use programas routes
 app.use('/admin/programas', programasRoutes(pool, { authenticateToken }));
@@ -185,6 +190,9 @@ app.use('/api/configuracion', configuracionRoutes(pool, { authenticateToken }));
 
 // Biblioteca de documentos (público y admin)
 app.use('/api/documentos', documentosRoutes(pool, { authenticateToken }));
+app.use('/api/certificados-v2', certificadosV2Routes);
+app.use('/api/admin/certificados', adminCertificadosRoutes);
+app.use('/admin/certificados', adminCertificadosRoutes);
 
 // Noticias tecnológicas: proxy/normalización desde NewsAPI
 // Usa la variable de entorno NEWS_API_KEY para autenticación.
@@ -770,20 +778,20 @@ app.post('/admin/users', authenticateToken, async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Verificar estructura de la tabla para usar el nombre correcto de columna
+    // Verificar estructura segura: exigir password_hash y prohibir password legado
     const [columns] = await pool.query('SHOW COLUMNS FROM users');
     const columnNames = columns.map(col => col.Field);
-    
-    const hasPasswordHash = columnNames.includes('password_hash');
-    const hasPassword = columnNames.includes('password');
+    if (columnNames.includes('password')) {
+      return res.status(500).json({ error: 'Esquema inseguro: columna legacy users.password detectada. Migra a password_hash.' });
+    }
+    if (!columnNames.includes('password_hash')) {
+      return res.status(500).json({ error: 'Esquema inválido: falta columna users.password_hash.' });
+    }
     const hasName = columnNames.includes('name');
     const hasFullName = columnNames.includes('full_name');
-    
-    const passwordColumn = hasPasswordHash ? 'password_hash' : 'password';
     const nameColumn = hasName ? 'name' : (hasFullName ? 'full_name' : 'username');
-    
     const [result] = await pool.query(
-      `INSERT INTO users (username, email, ${passwordColumn}, role, ${nameColumn}) VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO users (username, email, password_hash, role, ${nameColumn}) VALUES (?, ?, ?, ?, ?)`,
       [username, email, hashedPassword, role || 'user', full_name || null]
     );
     
@@ -815,16 +823,17 @@ app.put('/admin/users/:id', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
     
-    // Verificar estructura de la tabla
+    // Verificar estructura segura
     const [columns] = await pool.query('SHOW COLUMNS FROM users');
     const columnNames = columns.map(col => col.Field);
-    
-    const hasPasswordHash = columnNames.includes('password_hash');
-    const hasPassword = columnNames.includes('password');
+    if (columnNames.includes('password')) {
+      return res.status(500).json({ error: 'Esquema inseguro: columna legacy users.password detectada. Migra a password_hash.' });
+    }
+    if (!columnNames.includes('password_hash')) {
+      return res.status(500).json({ error: 'Esquema inválido: falta columna users.password_hash.' });
+    }
     const hasName = columnNames.includes('name');
     const hasFullName = columnNames.includes('full_name');
-    
-    const passwordColumn = hasPasswordHash ? 'password_hash' : 'password';
     const nameColumn = hasName ? 'name' : (hasFullName ? 'full_name' : 'username');
     
     let query = `UPDATE users SET username = ?, email = ?, role = ?, ${nameColumn} = ?`;
@@ -832,7 +841,7 @@ app.put('/admin/users/:id', authenticateToken, async (req, res) => {
     
     if (password) {
       const hashedPassword = await bcrypt.hash(password, 10);
-      query += `, ${passwordColumn} = ?`;
+      query += `, password_hash = ?`;
       params.push(hashedPassword);
     }
     

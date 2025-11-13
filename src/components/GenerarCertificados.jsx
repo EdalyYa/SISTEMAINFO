@@ -64,7 +64,11 @@ const GenerarCertificados = ({ onClose }) => {
               nombre_completo: cert.nombre_completo,
               nombre_evento: cert.nombre_evento,
               fecha_inicio: cert.fecha_inicio,
-              fecha_fin: cert.fecha_fin
+              fecha_fin: cert.fecha_fin,
+              horas_academicas: cert.horas_academicas,
+              descripcion_evento: cert.descripcion_evento,
+              tipo_certificado: cert.tipo_certificado,
+              periodo_evento: cert.periodo_evento
             });
           }
           return acc;
@@ -86,34 +90,55 @@ const GenerarCertificados = ({ onClose }) => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      // Crear el certificado en la base de datos
-      const certificadoData = {
-        dni: estudianteSeleccionado.dni,
-        nombre_completo: estudianteSeleccionado.nombre_completo,
-        nombre_evento: estudianteSeleccionado.nombre_evento,
-        fecha_inicio: estudianteSeleccionado.fecha_inicio,
-        fecha_fin: estudianteSeleccionado.fecha_fin,
-        diseno_id: disenoSeleccionado.id,
-        activo: 1
+      // Crear el certificado usando el endpoint que aplica el diseño
+      const payload = {
+        datosEstudiante: {
+          dni: estudianteSeleccionado.dni,
+          nombreCompleto: estudianteSeleccionado.nombre_completo,
+          nombreEvento: estudianteSeleccionado.nombre_evento,
+          fechaInicio: estudianteSeleccionado.fecha_inicio,
+          fechaFin: estudianteSeleccionado.fecha_fin,
+          horasAcademicas: estudianteSeleccionado.horas_academicas,
+          observaciones: estudianteSeleccionado.descripcion_evento ?? null,
+          modalidad: null,
+        },
+        disenoId: disenoSeleccionado.id,
+        codigoVerificacion: ''
       };
 
-      const response = await fetch(`${API_HOST}/admin/certificados`, {
+      let response = await fetch(`${API_HOST}/admin/certificados/guardar-con-diseno`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(certificadoData)
+        body: JSON.stringify(payload)
       });
 
-      if (response.ok) {
+      let result = await response.json().catch(() => ({}));
+
+      // Fallback: si ya existe, actualizar el certificado con el diseño
+      if (!response.ok && (result?.message?.includes('Ya existe un certificado activo') || response.status === 400)) {
+        response = await fetch(`${API_HOST}/admin/certificados/actualizar-con-diseno`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+        result = await response.json().catch(() => ({}));
+      }
+
+      if (response.ok && (result?.success || result?.certificado)) {
         alert('Certificado generado exitosamente');
         // Limpiar selecciones
         setDisenoSeleccionado(null);
         setEstudianteSeleccionado(null);
         setPrevisualizacion(false);
       } else {
-        alert('Error al generar el certificado');
+        console.error('Error al generar con diseño:', result);
+        alert(result?.message || 'Error al generar el certificado');
       }
     } catch (error) {
       console.error('Error generating certificate:', error);
@@ -286,55 +311,10 @@ const GenerarCertificados = ({ onClose }) => {
                   {/* Elementos del certificado con datos reales */}
                   {disenoSeleccionado.configuracion && (
                     <>
-                      {/* Logo izquierdo */}
-                      <div
-                        className="absolute flex items-center justify-center"
-                        style={{
-                          left: disenoSeleccionado.configuracion.logoIzquierdo.x,
-                          top: disenoSeleccionado.configuracion.logoIzquierdo.y,
-                          width: disenoSeleccionado.configuracion.logoIzquierdo.width,
-                          height: disenoSeleccionado.configuracion.logoIzquierdo.height,
-                          zIndex: 1
-                        }}
-                      >
-                        {disenoSeleccionado.logoIzquierdo ? (
-                          <img
-                            src={disenoSeleccionado.logoIzquierdo.startsWith('/') ? disenoSeleccionado.logoIzquierdo : `/${disenoSeleccionado.logoIzquierdo}`}
-                            alt="Logo izquierdo"
-                            className="w-full h-full object-contain"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
-                            Logo Izq.
-                          </div>
-                        )}
-                      </div>
+                      {/* Logos eliminados */}
 
-                      {/* Logo derecho */}
-                      <div
-                        className="absolute flex items-center justify-center"
-                        style={{
-                          left: disenoSeleccionado.configuracion.logoDerecho.x,
-                          top: disenoSeleccionado.configuracion.logoDerecho.y,
-                          width: disenoSeleccionado.configuracion.logoDerecho.width,
-                          height: disenoSeleccionado.configuracion.logoDerecho.height,
-                          zIndex: 1
-                        }}
-                      >
-                        {disenoSeleccionado.logoDerecho ? (
-                          <img
-                            src={disenoSeleccionado.logoDerecho.startsWith('/') ? disenoSeleccionado.logoDerecho : `/${disenoSeleccionado.logoDerecho}`}
-                            alt="Logo derecho"
-                            className="w-full h-full object-contain"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
-                            Logo Der.
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Nombre del Instituto */}
+                      {/* Nombre del Instituto (solo si visible) */}
+                      {disenoSeleccionado.configuracion?.nombreInstituto?.visible && (
                       <div
                         className="absolute font-semibold text-center"
                         style={{
@@ -347,9 +327,10 @@ const GenerarCertificados = ({ onClose }) => {
                         }}
                       >
                         INSTITUTO DE INFORMÁTICA UNA-PUNO
-                      </div>
+                      </div>)}
 
-                      {/* Título */}
+                      {/* Título (solo si visible) */}
+                      {disenoSeleccionado.configuracion?.titulo?.visible && (
                       <div
                         className="absolute font-bold text-center"
                         style={{
@@ -362,9 +343,10 @@ const GenerarCertificados = ({ onClose }) => {
                         }}
                       >
                         CERTIFICADO
-                      </div>
+                      </div>)}
 
-                      {/* Texto Otorgado */}
+                      {/* Texto Otorgado (solo si visible) */}
+                      {disenoSeleccionado.configuracion?.otorgado?.visible && (
                       <div
                         className="absolute text-center"
                         style={{
@@ -377,9 +359,10 @@ const GenerarCertificados = ({ onClose }) => {
                         }}
                       >
                         Otorgado a:
-                      </div>
+                      </div>)}
 
-                      {/* Nombre del estudiante - REAL */}
+                      {/* Nombre del estudiante - REAL (solo si visible) */}
+                      {disenoSeleccionado.configuracion?.nombreEstudiante?.visible && (
                       <div
                         className="absolute font-semibold text-center"
                         style={{
@@ -392,9 +375,10 @@ const GenerarCertificados = ({ onClose }) => {
                         }}
                       >
                         {estudianteSeleccionado.nombre_completo}
-                      </div>
+                      </div>)}
 
-                      {/* Descripción */}
+                      {/* Descripción (solo si visible) */}
+                      {disenoSeleccionado.configuracion?.descripcion?.visible && (
                       <div
                         className="absolute text-center max-w-lg"
                         style={{
@@ -407,9 +391,10 @@ const GenerarCertificados = ({ onClose }) => {
                         }}
                       >
                         Por haber participado en "{estudianteSeleccionado.nombre_evento}" realizado del {new Date(estudianteSeleccionado.fecha_inicio).toLocaleDateString('es-ES')} al {new Date(estudianteSeleccionado.fecha_fin).toLocaleDateString('es-ES')}.
-                      </div>
+                      </div>)}
 
-                      {/* Fecha */}
+                      {/* Fecha (solo si visible) */}
+                      {disenoSeleccionado.configuracion?.fecha?.visible && (
                       <div
                         className="absolute text-center"
                         style={{
@@ -426,7 +411,7 @@ const GenerarCertificados = ({ onClose }) => {
                           month: 'long', 
                           year: 'numeric' 
                         })}
-                      </div>
+                      </div>)}
                     </>
                   )}
                 </div>

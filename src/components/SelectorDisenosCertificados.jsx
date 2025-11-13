@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
-import { API_HOST, ASSET_BASE } from '../config/api';
+import { API_HOST, ASSET_BASE, API_BASE } from '../config/api';
 
 const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
   const [disenos, setDisenos] = useState([]);
@@ -29,7 +29,7 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
   const cargarDisenos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/admin/certificados/disenos', {
+      const response = await fetch(`${API_BASE}/admin/certificados/disenos`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -53,7 +53,7 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('/admin/certificados/buscar', {
+      const response = await fetch(`${API_BASE}/admin/certificados/buscar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,119 +111,111 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
         }
       }
       
-      // Agregar elementos de texto usando la configuración del diseño
+      // Agregar elementos de texto usando EXCLUSIVAMENTE la configuración del diseño guardada en DB
       console.log('Diseño seleccionado:', selectedDiseno);
-      console.log('Configuración del diseño:', selectedDiseno.configuracion);
-      const config = selectedDiseno.configuracion || {};
-      
-      // Configuración por defecto si no existe
-         const defaultConfig = {
-           nombreInstituto: { x: 400, y: 80, fontSize: 18, color: '#000000' },
-           titulo: { x: 400, y: 150, fontSize: 32, color: '#000000' },
-           otorgado: { x: 400, y: 220, fontSize: 16, color: '#000000' },
-           nombreEstudiante: { x: 400, y: 280, fontSize: 24, color: '#000000' },
-           descripcion: { x: 400, y: 350, fontSize: 16, color: '#000000' },
-           fecha: { x: 400, y: 450, fontSize: 14, color: '#000000' },
-           codigo: { x: 400, y: 500, fontSize: 12, color: '#666666' },
-           logoIzquierdo: { x: 50, y: 50, width: 80, height: 80 },
-           logoDerecho: { x: 670, y: 50, width: 80, height: 80 },
-           firmaIzquierda: { x: 200, y: 520, width: 120, height: 60 },
-           firmaDerecha: { x: 480, y: 520, width: 120, height: 60 }
-         };
-         
-         // Combinar configuración guardada con valores por defecto
-         const mergedConfig = { ...defaultConfig, ...config };
-      
-      // Nombre del instituto
-       pdf.setFontSize(mergedConfig.nombreInstituto.fontSize || 18);
-       pdf.setTextColor(mergedConfig.nombreInstituto.color || '#000000');
-       pdf.text('INSTITUTO DE INFORMÁTICA UNA-PUNO', mergedConfig.nombreInstituto.x, mergedConfig.nombreInstituto.y, { align: 'center' });
-       
-       // Título
-       pdf.setFontSize(mergedConfig.titulo.fontSize || 32);
-       pdf.setTextColor(mergedConfig.titulo.color || '#000000');
-       pdf.text('CERTIFICADO', mergedConfig.titulo.x, mergedConfig.titulo.y, { align: 'center' });
-       
-       // Otorgado
-       pdf.setFontSize(mergedConfig.otorgado.fontSize || 16);
-       pdf.setTextColor(mergedConfig.otorgado.color || '#000000');
-       pdf.text('Otorgado a:', mergedConfig.otorgado.x, mergedConfig.otorgado.y, { align: 'center' });
-       
-       // Nombre del estudiante (datos reales)
-       pdf.setFontSize(mergedConfig.nombreEstudiante.fontSize || 24);
-       pdf.setTextColor(mergedConfig.nombreEstudiante.color || '#000000');
-       pdf.text(selectedEstudiante.nombre_completo, mergedConfig.nombreEstudiante.x, mergedConfig.nombreEstudiante.y, { align: 'center' });
-       
-       // Descripción (datos reales)
-       pdf.setFontSize(mergedConfig.descripcion.fontSize || 16);
-       pdf.setTextColor(mergedConfig.descripcion.color || '#000000');
-       const descripcion = `Por haber participado en "${selectedEstudiante.nombre_evento}" realizado ${selectedEstudiante.periodo_evento}.`;
-       const lines = pdf.splitTextToSize(descripcion, 400);
-       pdf.text(lines, mergedConfig.descripcion.x, mergedConfig.descripcion.y, { align: 'center' });
-       
-       // Fecha (datos reales)
-       pdf.setFontSize(mergedConfig.fecha.fontSize || 14);
-       pdf.setTextColor(mergedConfig.fecha.color || '#000000');
-       const fecha = new Date(selectedEstudiante.fecha_emision).toLocaleDateString('es-ES', { 
-         year: 'numeric', 
-         month: 'long', 
-         day: 'numeric' 
-       });
-       pdf.text(`Puno, ${fecha}`, mergedConfig.fecha.x, mergedConfig.fecha.y, { align: 'center' });
-       
-       // Código (datos reales)
-       pdf.setFontSize(mergedConfig.codigo.fontSize || 12);
-       pdf.setTextColor(mergedConfig.codigo.color || '#666666');
-       pdf.text(`Código: ${selectedEstudiante.codigo_verificacion}`, mergedConfig.codigo.x, mergedConfig.codigo.y, { align: 'center' });
-      
-      // Agregar logos si existen
-      if (selectedDiseno.logoIzquierdo) {
-        try {
-          const logoIzq = new Image();
-          logoIzq.crossOrigin = 'anonymous';
-          logoIzq.src = selectedDiseno.logoIzquierdo.startsWith('/')
-            ? selectedDiseno.logoIzquierdo
-            : `/${selectedDiseno.logoIzquierdo}`;
-          await new Promise((resolve, reject) => {
-            logoIzq.onload = resolve;
-            logoIzq.onerror = reject;
-          });
-          pdf.addImage(logoIzq, 'PNG', mergedConfig.logoIzquierdo.x, mergedConfig.logoIzquierdo.y, mergedConfig.logoIzquierdo.width, mergedConfig.logoIzquierdo.height);
-        } catch (error) {
-          console.warn('No se pudo cargar el logo izquierdo:', error);
+      console.log('Configuración del diseño (raw):', selectedDiseno.configuracion);
+      let mergedConfig = {};
+      try {
+        if (typeof selectedDiseno.configuracion === 'string') {
+          mergedConfig = JSON.parse(selectedDiseno.configuracion);
+        } else if (typeof selectedDiseno.configuracion === 'object' && selectedDiseno.configuracion !== null) {
+          mergedConfig = selectedDiseno.configuracion;
         }
+      } catch (e) {
+        console.warn('No se pudo parsear configuracion del diseño:', e);
+        mergedConfig = {};
       }
       
-      if (selectedDiseno.logoDerecho) {
-        try {
-          const logoDer = new Image();
-          logoDer.crossOrigin = 'anonymous';
-          logoDer.src = selectedDiseno.logoDerecho.startsWith('/')
-            ? selectedDiseno.logoDerecho
-            : `/${selectedDiseno.logoDerecho}`;
-          await new Promise((resolve, reject) => {
-            logoDer.onload = resolve;
-            logoDer.onerror = reject;
-          });
-          pdf.addImage(logoDer, 'PNG', mergedConfig.logoDerecho.x, mergedConfig.logoDerecho.y, mergedConfig.logoDerecho.width, mergedConfig.logoDerecho.height);
-        } catch (error) {
-          console.warn('No se pudo cargar el logo derecho:', error);
-        }
+      // Nombre del instituto (solo si definido y visible)
+      if (mergedConfig.nombreInstituto?.visible) {
+        pdf.setFontSize(mergedConfig.nombreInstituto.fontSize || 18);
+        pdf.setTextColor(mergedConfig.nombreInstituto.color || '#000000');
+        pdf.text('INSTITUTO DE INFORMÁTICA UNA-PUNO', mergedConfig.nombreInstituto.x, mergedConfig.nombreInstituto.y, { align: 'center' });
+      }
+       
+      // Título (solo si definido y visible)
+      if (mergedConfig.titulo?.visible) {
+        pdf.setFontSize(mergedConfig.titulo.fontSize || 32);
+        pdf.setTextColor(mergedConfig.titulo.color || '#000000');
+        pdf.text('CERTIFICADO', mergedConfig.titulo.x, mergedConfig.titulo.y, { align: 'center' });
+      }
+       
+      // Otorgado (solo si definido y visible)
+      if (mergedConfig.otorgado?.visible) {
+        pdf.setFontSize(mergedConfig.otorgado.fontSize || 16);
+        pdf.setTextColor(mergedConfig.otorgado.color || '#000000');
+        pdf.text('Otorgado a:', mergedConfig.otorgado.x, mergedConfig.otorgado.y, { align: 'center' });
+      }
+       
+      // Nombre del estudiante (datos reales, solo si definido y visible)
+      if (mergedConfig.nombreEstudiante?.visible) {
+        pdf.setFontSize(mergedConfig.nombreEstudiante.fontSize || 24);
+        pdf.setTextColor(mergedConfig.nombreEstudiante.color || '#000000');
+        pdf.text(selectedEstudiante.nombre_completo, mergedConfig.nombreEstudiante.x, mergedConfig.nombreEstudiante.y, { align: 'center' });
+      }
+       
+      // Descripción (datos reales, solo si definida y visible)
+      if (mergedConfig.descripcion?.visible) {
+        pdf.setFontSize(mergedConfig.descripcion.fontSize || 16);
+        pdf.setTextColor(mergedConfig.descripcion.color || '#000000');
+        const descripcion = `Por haber participado en "${selectedEstudiante.nombre_evento}" realizado ${selectedEstudiante.periodo_evento}.`;
+        const lines = pdf.splitTextToSize(descripcion, 400);
+        pdf.text(lines, mergedConfig.descripcion.x, mergedConfig.descripcion.y, { align: 'center' });
+      }
+       
+      // Fecha (datos reales, solo si definida y visible)
+      if (mergedConfig.fecha?.visible) {
+        pdf.setFontSize(mergedConfig.fecha.fontSize || 14);
+        pdf.setTextColor(mergedConfig.fecha.color || '#000000');
+        const fecha = new Date(selectedEstudiante.fecha_emision).toLocaleDateString('es-ES', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+        pdf.text(`Puno, ${fecha}`, mergedConfig.fecha.x, mergedConfig.fecha.y, { align: 'center' });
+      }
+       
+      // Código (datos reales, solo si definido y visible)
+      if (mergedConfig.codigo?.visible) {
+        pdf.setFontSize(mergedConfig.codigo.fontSize || 12);
+        pdf.setTextColor(mergedConfig.codigo.color || '#666666');
+        pdf.text(`Código: ${selectedEstudiante.codigo_verificacion}`, mergedConfig.codigo.x, mergedConfig.codigo.y, { align: 'center' });
       }
       
-      // Líneas de firma
-      pdf.setDrawColor(0, 0, 0);
-      pdf.setLineWidth(1);
-      pdf.line(mergedConfig.firmaIzquierda.x, mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 20, 
-               mergedConfig.firmaIzquierda.x + mergedConfig.firmaIzquierda.width, mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 20);
-      pdf.line(mergedConfig.firmaDerecha.x, mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 20, 
-               mergedConfig.firmaDerecha.x + mergedConfig.firmaDerecha.width, mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 20);
+      // Logos eliminados
       
-      // Texto de firmas
-      pdf.setFontSize(10);
-      pdf.setTextColor('#000000');
-      pdf.text('Director', mergedConfig.firmaIzquierda.x + mergedConfig.firmaIzquierda.width/2, mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 5, { align: 'center' });
-      pdf.text('Coordinador', mergedConfig.firmaDerecha.x + mergedConfig.firmaDerecha.width/2, mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 5, { align: 'center' });
+      // Líneas y textos de firma (solo si existen en configuración)
+      if (mergedConfig.firmaIzquierda && mergedConfig.firmaDerecha) {
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(1);
+        pdf.line(
+          mergedConfig.firmaIzquierda.x,
+          mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 20,
+          mergedConfig.firmaIzquierda.x + mergedConfig.firmaIzquierda.width,
+          mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 20
+        );
+        pdf.line(
+          mergedConfig.firmaDerecha.x,
+          mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 20,
+          mergedConfig.firmaDerecha.x + mergedConfig.firmaDerecha.width,
+          mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 20
+        );
+        
+        pdf.setFontSize(10);
+        pdf.setTextColor('#000000');
+        pdf.text(
+          'Director',
+          mergedConfig.firmaIzquierda.x + mergedConfig.firmaIzquierda.width / 2,
+          mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 5,
+          { align: 'center' }
+        );
+        pdf.text(
+          'Coordinador',
+          mergedConfig.firmaDerecha.x + mergedConfig.firmaDerecha.width / 2,
+          mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 5,
+          { align: 'center' }
+        );
+      }
       
       // Descargar el PDF
       const nombreArchivo = `certificado-${selectedEstudiante.nombre_completo.replace(/\s+/g, '-')}-${Date.now()}.pdf`;
@@ -298,99 +290,99 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
         }
       }
       
-      // Configuración por defecto
-      const defaultConfig = {
-        logoIzquierdo: { x: 50, y: 50, width: 100, height: 100 },
-        logoDerecho: { x: 650, y: 50, width: 100, height: 100 },
-        nombreInstituto: { x: 400, y: 120, fontSize: 18, color: '#000000' },
-        titulo: { x: 400, y: 200, fontSize: 32, color: '#000000' },
-        otorgado: { x: 400, y: 250, fontSize: 16, color: '#000000' },
-        nombreEstudiante: { x: 400, y: 280, fontSize: 24, color: '#000000' },
-        descripcion: { x: 400, y: 350, fontSize: 16, color: '#000000' },
-        fecha: { x: 400, y: 450, fontSize: 14, color: '#000000' },
-        codigo: { x: 400, y: 500, fontSize: 12, color: '#666666' },
-        firmaIzquierda: { x: 200, y: 550, width: 150, height: 80 },
-        firmaDerecha: { x: 550, y: 550, width: 150, height: 80 }
-      };
-      
-      // Combinar configuración guardada con la por defecto
-      const mergedConfig = { ...defaultConfig, ...diseno.configuracion };
-      
-      // Agregar elementos de texto
-      pdf.setFontSize(mergedConfig.nombreInstituto.fontSize || 18);
-      pdf.setTextColor(mergedConfig.nombreInstituto.color || '#000000');
-      pdf.text('INSTITUTO DE INFORMÁTICA UNA-PUNO', mergedConfig.nombreInstituto.x, mergedConfig.nombreInstituto.y, { align: 'center' });
-      
-      pdf.setFontSize(mergedConfig.titulo.fontSize || 32);
-      pdf.setTextColor(mergedConfig.titulo.color || '#000000');
-      pdf.text('CERTIFICADO', mergedConfig.titulo.x, mergedConfig.titulo.y, { align: 'center' });
-      
-      pdf.setFontSize(mergedConfig.otorgado.fontSize || 16);
-      pdf.setTextColor(mergedConfig.otorgado.color || '#000000');
-      pdf.text('Otorgado a:', mergedConfig.otorgado.x, mergedConfig.otorgado.y, { align: 'center' });
-      
-      pdf.setFontSize(mergedConfig.nombreEstudiante.fontSize || 24);
-      pdf.setTextColor(mergedConfig.nombreEstudiante.color || '#000000');
-      pdf.text('[NOMBRE DEL ESTUDIANTE]', mergedConfig.nombreEstudiante.x, mergedConfig.nombreEstudiante.y, { align: 'center' });
-      
-      pdf.setFontSize(mergedConfig.descripcion.fontSize || 16);
-      pdf.setTextColor(mergedConfig.descripcion.color || '#000000');
-      const descripcion = 'Por haber participado como Asistente en la capacitación de "Desarrollo de Aplicaciones Web con React y Node.js" realizada del 01 al 15 de Diciembre del 2024.';
-      const lines = pdf.splitTextToSize(descripcion, 400);
-      pdf.text(lines, mergedConfig.descripcion.x, mergedConfig.descripcion.y, { align: 'center' });
-      
-      pdf.setFontSize(mergedConfig.fecha.fontSize || 14);
-      pdf.setTextColor(mergedConfig.fecha.color || '#000000');
-      pdf.text('Puno, 15 de Diciembre del 2024', mergedConfig.fecha.x, mergedConfig.fecha.y, { align: 'center' });
-      
-      pdf.setFontSize(mergedConfig.codigo.fontSize || 12);
-      pdf.setTextColor(mergedConfig.codigo.color || '#666666');
-      pdf.text('Código: PREVIEW-001', mergedConfig.codigo.x, mergedConfig.codigo.y, { align: 'center' });
-      
-      // Agregar logos si existen
-      if (diseno.logoIzquierdo) {
-        try {
-          const logoIzq = new Image();
-          logoIzq.crossOrigin = 'anonymous';
-          logoIzq.src = `${ASSET_BASE}${diseno.logoIzquierdo}`;
-          await new Promise((resolve, reject) => {
-            logoIzq.onload = resolve;
-            logoIzq.onerror = reject;
-          });
-          pdf.addImage(logoIzq, 'PNG', mergedConfig.logoIzquierdo.x, mergedConfig.logoIzquierdo.y, mergedConfig.logoIzquierdo.width, mergedConfig.logoIzquierdo.height);
-        } catch (error) {
-          console.warn('No se pudo cargar el logo izquierdo:', error);
+      // Usar estrictamente la configuración guardada en DB (parsear si viene como string)
+      let mergedConfig = {};
+      try {
+        if (typeof diseno.configuracion === 'string') {
+          mergedConfig = JSON.parse(diseno.configuracion);
+        } else if (typeof diseno.configuracion === 'object' && diseno.configuracion !== null) {
+          mergedConfig = diseno.configuracion;
         }
+      } catch (e) {
+        console.warn('No se pudo parsear configuracion (preview):', e);
+        mergedConfig = {};
       }
       
-      if (diseno.logoDerecho) {
-        try {
-          const logoDer = new Image();
-          logoDer.crossOrigin = 'anonymous';
-          logoDer.src = `${ASSET_BASE}${diseno.logoDerecho}`;
-          await new Promise((resolve, reject) => {
-            logoDer.onload = resolve;
-            logoDer.onerror = reject;
-          });
-          pdf.addImage(logoDer, 'PNG', mergedConfig.logoDerecho.x, mergedConfig.logoDerecho.y, mergedConfig.logoDerecho.width, mergedConfig.logoDerecho.height);
-        } catch (error) {
-          console.warn('No se pudo cargar el logo derecho:', error);
-        }
+      // Agregar elementos de texto (solo definidos y visibles)
+      if (mergedConfig.nombreInstituto?.visible) {
+        pdf.setFontSize(mergedConfig.nombreInstituto.fontSize || 18);
+        pdf.setTextColor(mergedConfig.nombreInstituto.color || '#000000');
+        pdf.text('INSTITUTO DE INFORMÁTICA UNA-PUNO', mergedConfig.nombreInstituto.x, mergedConfig.nombreInstituto.y, { align: 'center' });
       }
       
-      // Líneas de firma
-      pdf.setDrawColor(0, 0, 0);
-      pdf.setLineWidth(1);
-      pdf.line(mergedConfig.firmaIzquierda.x, mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 20, 
-               mergedConfig.firmaIzquierda.x + mergedConfig.firmaIzquierda.width, mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 20);
-      pdf.line(mergedConfig.firmaDerecha.x, mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 20, 
-               mergedConfig.firmaDerecha.x + mergedConfig.firmaDerecha.width, mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 20);
+      if (mergedConfig.titulo?.visible) {
+        pdf.setFontSize(mergedConfig.titulo.fontSize || 32);
+        pdf.setTextColor(mergedConfig.titulo.color || '#000000');
+        pdf.text('CERTIFICADO', mergedConfig.titulo.x, mergedConfig.titulo.y, { align: 'center' });
+      }
       
-      // Texto de firmas
-      pdf.setFontSize(10);
-      pdf.setTextColor('#000000');
-      pdf.text('Director', mergedConfig.firmaIzquierda.x + mergedConfig.firmaIzquierda.width/2, mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 5, { align: 'center' });
-      pdf.text('Coordinador', mergedConfig.firmaDerecha.x + mergedConfig.firmaDerecha.width/2, mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 5, { align: 'center' });
+      if (mergedConfig.otorgado?.visible) {
+        pdf.setFontSize(mergedConfig.otorgado.fontSize || 16);
+        pdf.setTextColor(mergedConfig.otorgado.color || '#000000');
+        pdf.text('Otorgado a:', mergedConfig.otorgado.x, mergedConfig.otorgado.y, { align: 'center' });
+      }
+      
+      if (mergedConfig.nombreEstudiante?.visible) {
+        pdf.setFontSize(mergedConfig.nombreEstudiante.fontSize || 24);
+        pdf.setTextColor(mergedConfig.nombreEstudiante.color || '#000000');
+        pdf.text('[NOMBRE DEL ESTUDIANTE]', mergedConfig.nombreEstudiante.x, mergedConfig.nombreEstudiante.y, { align: 'center' });
+      }
+      
+      if (mergedConfig.descripcion?.visible) {
+        pdf.setFontSize(mergedConfig.descripcion.fontSize || 16);
+        pdf.setTextColor(mergedConfig.descripcion.color || '#000000');
+        const descripcion = 'Por haber participado como Asistente en la capacitación de "Desarrollo de Aplicaciones Web con React y Node.js" realizada del 01 al 15 de Diciembre del 2024.';
+        const lines = pdf.splitTextToSize(descripcion, 400);
+        pdf.text(lines, mergedConfig.descripcion.x, mergedConfig.descripcion.y, { align: 'center' });
+      }
+      
+      if (mergedConfig.fecha?.visible) {
+        pdf.setFontSize(mergedConfig.fecha.fontSize || 14);
+        pdf.setTextColor(mergedConfig.fecha.color || '#000000');
+        pdf.text('Puno, 15 de Diciembre del 2024', mergedConfig.fecha.x, mergedConfig.fecha.y, { align: 'center' });
+      }
+      
+      if (mergedConfig.codigo?.visible) {
+        pdf.setFontSize(mergedConfig.codigo.fontSize || 12);
+        pdf.setTextColor(mergedConfig.codigo.color || '#666666');
+        pdf.text('Código: PREVIEW-001', mergedConfig.codigo.x, mergedConfig.codigo.y, { align: 'center' });
+      }
+      
+      // Logos eliminados
+      
+      // Líneas y texto de firmas (solo si existen en configuración)
+      if (mergedConfig.firmaIzquierda && mergedConfig.firmaDerecha) {
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(1);
+        pdf.line(
+          mergedConfig.firmaIzquierda.x,
+          mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 20,
+          mergedConfig.firmaIzquierda.x + mergedConfig.firmaIzquierda.width,
+          mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 20
+        );
+        pdf.line(
+          mergedConfig.firmaDerecha.x,
+          mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 20,
+          mergedConfig.firmaDerecha.x + mergedConfig.firmaDerecha.width,
+          mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 20
+        );
+
+        // Texto de firmas
+        pdf.setFontSize(10);
+        pdf.setTextColor('#000000');
+        pdf.text(
+          'Director',
+          mergedConfig.firmaIzquierda.x + mergedConfig.firmaIzquierda.width / 2,
+          mergedConfig.firmaIzquierda.y + mergedConfig.firmaIzquierda.height - 5,
+          { align: 'center' }
+        );
+        pdf.text(
+          'Coordinador',
+          mergedConfig.firmaDerecha.x + mergedConfig.firmaDerecha.width / 2,
+          mergedConfig.firmaDerecha.y + mergedConfig.firmaDerecha.height - 5,
+          { align: 'center' }
+        );
+      }
       
       // Descargar el PDF de vista previa
       const nombreArchivo = `vista-previa-${diseno.nombre.replace(/\s+/g, '-')}-${Date.now()}.pdf`;
@@ -463,35 +455,7 @@ const SelectorDisenosCertificados = ({ onClose, onCertificateGenerated }) => {
                   
                   {/* Contenido del certificado en miniatura */}
                   <div className="absolute inset-0 p-2 text-xs">
-                    {/* Logos */}
-                    {diseno.logoIzquierdo && (
-                      <img
-                        src={`${ASSET_BASE}${diseno.logoIzquierdo}`}
-                        alt="Logo izquierdo"
-                        className="absolute w-6 h-6 object-contain"
-                        style={{
-                          left: `${(diseno.configuracion?.logoIzquierdo?.x || 50) / 8}px`,
-                          top: `${(diseno.configuracion?.logoIzquierdo?.y || 50) / 8}px`
-                        }}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    )}
-                    {diseno.logoDerecho && (
-                      <img
-                        src={`${ASSET_BASE}${diseno.logoDerecho}`}
-                        alt="Logo derecho"
-                        className="absolute w-6 h-6 object-contain"
-                        style={{
-                          left: `${(diseno.configuracion?.logoDerecho?.x || 650) / 8}px`,
-                          top: `${(diseno.configuracion?.logoDerecho?.y || 50) / 8}px`
-                        }}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    )}
+                    {/* Logos eliminados en miniaturas */}
                     
                     {/* Texto del certificado */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">

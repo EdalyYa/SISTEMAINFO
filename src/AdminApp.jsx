@@ -15,7 +15,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import Matriculas from './pages/admin/Matriculas';
 import Docentes from './pages/admin/Docentes';
 import ModulosAdmin from './pages/admin/Modulos';
-import CertificadosAdmin from './pages/admin/CertificadosAdmin';
+import CertificadosV2 from './pages/admin/CertificadosV2';
 import Configuracion from './pages/admin/Configuracion';
 import DocumentosAdmin from './pages/admin/DocumentosAdmin';
 import { useToast } from './components/ui';
@@ -58,6 +58,10 @@ function AdminApp() {
   const handleLogin = (token, userData) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
+    try {
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(userData));
+    } catch (_) {}
     setIsAuthenticated(true);
     try {
       toast.success('Inicio de sesión exitoso', {
@@ -173,6 +177,7 @@ function AdminApp() {
       {isAuthenticated && (
         <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
           <Route index element={<Dashboard />} />
+          <Route path="certificados-v2" element={<CertificadosV2 />} />
           <Route path="users" element={<Users token={localStorage.getItem('token')} />} />
           <Route path="programas" element={<ProgramasAdmin />} />
           <Route path="horarios" element={<HorariosAdmin />} />
@@ -186,7 +191,6 @@ function AdminApp() {
           <Route path="reclamaciones" element={<Reclamaciones />} />
           <Route path="configuracion" element={<Configuracion />} />
           <Route path="modulos" element={<ModulosAdmin />} />
-          <Route path="certificados" element={<CertificadosAdmin />} />
           <Route path="*" element={<Navigate to="/panel" replace />} />
         </Route>
       )}

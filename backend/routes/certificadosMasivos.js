@@ -142,6 +142,50 @@ router.post('/procesar/:id', authenticateToken, adminAuth, async (req, res) => {
       return res.status(400).json({ error: 'El archivo Excel está vacío' });
     }
 
+    // Resolver plantilla por defecto a partir del diseño activo o override del cliente
+    const disenoIdOverride = parseInt(req.query?.disenoId || '', 10);
+    let selectedDisenoId = null;
+    try {
+      const [activeRows] = await connection.execute(
+        'SELECT id FROM disenos_certificados WHERE (activa = 1 OR activo = 1) ORDER BY updated_at DESC LIMIT 1'
+      );
+      if (activeRows && activeRows.length > 0) {
+        selectedDisenoId = activeRows[0].id;
+      }
+    } catch (e) {
+      console.warn('No se pudo obtener diseño activo:', e.message);
+    }
+    if (!isNaN(disenoIdOverride)) {
+      try {
+        const [overrideRows] = await connection.execute(
+          'SELECT id FROM disenos_certificados WHERE id = ? LIMIT 1',
+          [disenoIdOverride]
+        );
+        if (overrideRows && overrideRows.length > 0) {
+          selectedDisenoId = disenoIdOverride;
+        }
+      } catch (e) {
+        console.warn('No se pudo validar disenoId override:', e.message);
+      }
+    }
+    let defaultPlantilla = selectedDisenoId ? `diseno_${selectedDisenoId}.pdf` : 'seminario-desarrollo.svg';
+
+    // Prefetch del diseño seleccionado para snapshot
+    let disenoActivo = null;
+    if (selectedDisenoId) {
+      try {
+        const [cfgRows] = await connection.execute(
+          'SELECT id, campos_json, configuracion, fondo_url, fondo_certificado, imagen_fondo FROM disenos_certificados WHERE id = ? LIMIT 1',
+          [selectedDisenoId]
+        );
+        if (cfgRows && cfgRows.length > 0) {
+          disenoActivo = cfgRows[0];
+        }
+      } catch (e) {
+        console.warn('No se pudo obtener configuración del diseño seleccionado:', e.message);
+      }
+    }
+
     // Utilidades de normalización
     const normalizeKey = (k) => String(k).toLowerCase().trim().replace(/\s+/g, '_');
     const parseDateFlexible = (val) => {
@@ -254,6 +298,40 @@ router.post('/procesar/:id', authenticateToken, adminAuth, async (req, res) => {
 
     const resultados = [];
 
+    // Helper: verificar si existe una columna en la tabla certificados
+    async function columnExists(columnName) {
+      try {
+        const [rows] = await connection.execute(
+          `SELECT COUNT(*) AS cnt
+           FROM information_schema.columns
+           WHERE table_schema = DATABASE()
+             AND table_name = 'certificados'
+             AND column_name = ?`,
+          [columnName]
+        );
+        return rows[0]?.cnt > 0;
+      } catch (e) {
+        console.warn('No se pudo verificar columna', columnName, e.message);
+        return false;
+      }
+    }
+
+    const includeDisenoId = await columnExists('diseno_id');
+    const includeConfigUsada = await columnExists('config_usada');
+    const includeFondoUsado = await columnExists('fondo_usado');
+
+    const parseJsonSafe = (val) => {
+      try {
+        return typeof val === 'string' ? JSON.parse(val) : (val || {});
+      } catch (err) {
+        return {};
+      }
+    };
+    const snapshotConfig = disenoActivo ? {
+      configuracion: disenoActivo.campos_json ? parseJsonSafe(disenoActivo.campos_json) : parseJsonSafe(disenoActivo.configuracion),
+      fondo: disenoActivo.fondo_url || disenoActivo.fondo_certificado || disenoActivo.imagen_fondo || null
+    } : null;
+
     for (let i = 0; i < certificados.length; i++) {
       const certificado = certificados[i];
 
@@ -290,26 +368,42 @@ router.post('/procesar/:id', authenticateToken, adminAuth, async (req, res) => {
         // Construir nombre completo
         const nombreCompleto = `${certificado.apellido_paterno} ${certificado.apellido_materno}, ${certificado.nombres}`;
 
-        // Crear certificado en la base de datos
-        const [result] = await connection.execute(
-          `INSERT INTO certificados (
-            dni, nombre_completo, tipo_certificado, nombre_evento,
-            descripcion_evento, fecha_inicio, fecha_fin, horas_academicas,
-            codigo_verificacion, plantilla_certificado, fecha_emision, activo
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 1)`,
-          [
-            certificado.dni,
-            nombreCompleto,
-            certificado.tipo_certificado,
-            certificado.nombre_evento,
-            '',
-            certificado.fecha_inicio,
-            certificado.fecha_fin,
-            certificado.horas_academicas,
-            codigoVerificacion,
-            'seminario-desarrollo.svg'
-          ]
-        );
+        // Crear certificado en la base de datos con columnas opcionales
+        const baseColumns = [
+          'dni', 'nombre_completo', 'tipo_certificado', 'nombre_evento',
+          'descripcion_evento', 'fecha_inicio', 'fecha_fin', 'horas_academicas',
+          'codigo_verificacion', 'plantilla_certificado'
+        ];
+        const baseValues = [
+          certificado.dni,
+          nombreCompleto,
+          certificado.tipo_certificado,
+          certificado.nombre_evento,
+          '',
+          certificado.fecha_inicio,
+          certificado.fecha_fin,
+          certificado.horas_academicas,
+          codigoVerificacion,
+          defaultPlantilla
+        ];
+        if (includeDisenoId && selectedDisenoId) {
+          baseColumns.push('diseno_id');
+          baseValues.push(selectedDisenoId);
+        }
+        if (includeConfigUsada && snapshotConfig) {
+          baseColumns.push('config_usada');
+          baseValues.push(JSON.stringify(snapshotConfig));
+        }
+        if (includeFondoUsado && snapshotConfig) {
+          baseColumns.push('fondo_usado');
+          baseValues.push(snapshotConfig.fondo || null);
+        }
+        const placeholders = baseColumns.map(() => '?').join(', ');
+        const insertQuery = `
+          INSERT INTO certificados (${baseColumns.join(', ')}, fecha_emision, activo)
+          VALUES (${placeholders}, NOW(), 1)
+        `;
+        const [result] = await connection.execute(insertQuery, baseValues);
 
         resultados.push({
           indice: i,
@@ -429,6 +523,7 @@ router.post('/generar-lote', authenticateToken, adminAuth, async (req, res) => {
   
   try {
     const { certificados } = req.body; // Array de certificados a generar
+    const disenoIdOverride = parseInt(req.query?.disenoId || req.body?.diseno_id || '', 10);
     
     if (!certificados || !Array.isArray(certificados) || certificados.length === 0) {
       return res.status(400).json({ 
@@ -440,6 +535,81 @@ router.post('/generar-lote', authenticateToken, adminAuth, async (req, res) => {
     await connection.beginTransaction();
     
     const resultados = [];
+
+    // Resolver plantilla por defecto similar a /procesar, permitiendo override del cliente
+    let selectedDisenoId = null;
+    try {
+      const [activeRows] = await connection.execute(
+        'SELECT id FROM disenos_certificados WHERE (activa = 1 OR activo = 1) ORDER BY updated_at DESC LIMIT 1'
+      );
+      if (activeRows && activeRows.length > 0) {
+        selectedDisenoId = activeRows[0].id;
+      }
+    } catch (e) {
+      console.warn('No se pudo obtener diseño activo (generar-lote):', e.message);
+    }
+    if (!isNaN(disenoIdOverride)) {
+      try {
+        const [overrideRows] = await connection.execute(
+          'SELECT id FROM disenos_certificados WHERE id = ? LIMIT 1',
+          [disenoIdOverride]
+        );
+        if (overrideRows && overrideRows.length > 0) {
+          selectedDisenoId = disenoIdOverride;
+        }
+      } catch (e) {
+        console.warn('No se pudo validar disenoId override (generar-lote):', e.message);
+      }
+    }
+    let defaultPlantilla = selectedDisenoId ? `diseno_${selectedDisenoId}.pdf` : 'seminario-desarrollo.svg';
+
+    // Prefetch del diseño seleccionado para snapshot
+    let disenoActivo = null;
+    if (selectedDisenoId) {
+      try {
+        const [cfgRows] = await connection.execute(
+          'SELECT id, campos_json, configuracion, fondo_url, fondo_certificado, imagen_fondo FROM disenos_certificados WHERE id = ? LIMIT 1',
+          [selectedDisenoId]
+        );
+        if (cfgRows && cfgRows.length > 0) {
+          disenoActivo = cfgRows[0];
+        }
+      } catch (e) {
+        console.warn('No se pudo obtener configuración del diseño seleccionado (generar-lote):', e.message);
+      }
+    }
+
+    // Helpers para columnas opcionales y snapshot
+    async function columnExists(columnName) {
+      try {
+        const [rows] = await connection.execute(
+          `SELECT COUNT(*) AS cnt
+           FROM information_schema.columns
+           WHERE table_schema = DATABASE()
+             AND table_name = 'certificados'
+             AND column_name = ?`,
+          [columnName]
+        );
+        return rows[0]?.cnt > 0;
+      } catch (e) {
+        console.warn('No se pudo verificar columna', columnName, e.message);
+        return false;
+      }
+    }
+    const includeDisenoId = await columnExists('diseno_id');
+    const includeConfigUsada = await columnExists('config_usada');
+    const includeFondoUsado = await columnExists('fondo_usado');
+    const parseJsonSafe = (val) => {
+      try {
+        return typeof val === 'string' ? JSON.parse(val) : (val || {});
+      } catch (err) {
+        return {};
+      }
+    };
+    const snapshotConfig = disenoActivo ? {
+      configuracion: disenoActivo.campos_json ? parseJsonSafe(disenoActivo.campos_json) : parseJsonSafe(disenoActivo.configuracion),
+      fondo: disenoActivo.fondo_url || disenoActivo.fondo_certificado || disenoActivo.imagen_fondo || null
+    } : null;
     
     for (let i = 0; i < certificados.length; i++) {
       const certificado = certificados[i];
@@ -491,26 +661,42 @@ router.post('/generar-lote', authenticateToken, adminAuth, async (req, res) => {
         // Construir nombre completo
         const nombreCompleto = `${certificado.apellido_paterno} ${certificado.apellido_materno}, ${certificado.nombres}`;
         
-        // Crear certificado en la base de datos
-        const [result] = await connection.execute(
-          `INSERT INTO certificados (
-            dni, nombre_completo, tipo_certificado, nombre_evento, 
-            descripcion_evento, fecha_inicio, fecha_fin, horas_academicas,
-            codigo_verificacion, plantilla_certificado, fecha_emision, activo
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 1)`,
-          [
-            certificado.dni,
-            nombreCompleto,
-            certificado.tipo_certificado,
-            certificado.nombre_evento,
-            certificado.descripcion_evento || '',
-            certificado.fecha_inicio,
-            certificado.fecha_fin,
-            certificado.horas_academicas,
-            codigoVerificacion,
-            'seminario-desarrollo.svg'
-          ]
-        );
+        // Crear certificado en la base de datos con columnas opcionales
+        const baseColumns = [
+          'dni', 'nombre_completo', 'tipo_certificado', 'nombre_evento', 
+          'descripcion_evento', 'fecha_inicio', 'fecha_fin', 'horas_academicas',
+          'codigo_verificacion', 'plantilla_certificado'
+        ];
+        const baseValues = [
+          certificado.dni,
+          nombreCompleto,
+          certificado.tipo_certificado,
+          certificado.nombre_evento,
+          certificado.descripcion_evento || '',
+          certificado.fecha_inicio,
+          certificado.fecha_fin,
+          certificado.horas_academicas,
+          codigoVerificacion,
+          defaultPlantilla
+        ];
+        if (includeDisenoId && selectedDisenoId) {
+          baseColumns.push('diseno_id');
+          baseValues.push(selectedDisenoId);
+        }
+        if (includeConfigUsada && snapshotConfig) {
+          baseColumns.push('config_usada');
+          baseValues.push(JSON.stringify(snapshotConfig));
+        }
+        if (includeFondoUsado && snapshotConfig) {
+          baseColumns.push('fondo_usado');
+          baseValues.push(snapshotConfig.fondo || null);
+        }
+        const placeholders = baseColumns.map(() => '?').join(', ');
+        const insertQuery = `
+          INSERT INTO certificados (${baseColumns.join(', ')}, fecha_emision, activo)
+          VALUES (${placeholders}, NOW(), 1)
+        `;
+        const [result] = await connection.execute(insertQuery, baseValues);
 
         // Nota: Generación de PDF comentada temporalmente hasta que se resuelva el servicio PDFGeneratorService
         // let pdfPath = null;

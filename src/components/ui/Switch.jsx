@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export const Switch = ({ checked, defaultChecked = false, onChange, className = '', label, ...props }) => {
+export const Switch = ({ checked, defaultChecked = false, onChange, className = '', label, onClick, ...props }) => {
   const [isOn, setIsOn] = useState(checked ?? defaultChecked);
 
   useEffect(() => {
@@ -13,12 +13,17 @@ export const Switch = ({ checked, defaultChecked = false, onChange, className = 
     onChange?.(next);
   };
 
+  const handleClick = (e) => {
+    toggle();
+    onClick?.(e);
+  };
+
   return (
     <button
       type="button"
       role="switch"
       aria-checked={isOn}
-      onClick={toggle}
+      onClick={handleClick}
       className={`inline-flex items-center w-11 h-6 rounded-full transition bg-slate-300 ${isOn ? 'bg-emerald-500' : 'bg-slate-300'} ${className}`}
       {...props}
     >

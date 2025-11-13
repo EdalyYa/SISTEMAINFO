@@ -1,8 +1,8 @@
 import React from 'react';
 import { API_BASE } from '../config/api';
-import { X, Download, Printer, FileText } from 'lucide-react';
+import { X, Download, Printer, FileText, Edit as EditIcon } from 'lucide-react';
 
-const PDFPreviewModal = ({ isOpen, onClose, pdfUrl, certificateCode }) => {
+const PDFPreviewModal = ({ isOpen, onClose, pdfUrl, certificateCode, onEdit }) => {
   if (!isOpen) return null;
 
   const handlePrint = () => {
@@ -15,7 +15,8 @@ const PDFPreviewModal = ({ isOpen, onClose, pdfUrl, certificateCode }) => {
   const handleDownload = async () => {
     try {
       const timestamp = new Date().getTime();
-      const downloadUrl = `${API_BASE}/admin/certificados/certificado/codigo/${certificateCode}/pdf?v=${timestamp}`;
+      // Descargar siempre regenerando con el diseño vigente
+      const downloadUrl = `${API_BASE}/admin/certificados/pdf/${certificateCode}?download=1&v=${timestamp}`;
       window.open(downloadUrl, '_blank');
     } catch (error) {
       console.error('Error downloading PDF:', error);
@@ -32,6 +33,15 @@ const PDFPreviewModal = ({ isOpen, onClose, pdfUrl, certificateCode }) => {
             Previsualización del Certificado
           </h3>
           <div className="flex items-center space-x-2">
+            {typeof onEdit === 'function' && (
+              <button
+                onClick={onEdit}
+                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+              >
+                <EditIcon className="w-4 h-4 mr-2" />
+                Editar
+              </button>
+            )}
             <button
               onClick={handlePrint}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

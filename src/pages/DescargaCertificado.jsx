@@ -9,10 +9,12 @@ import {
   User,
   Calendar,
   Award,
-  Shield
+  Shield,
+  Eye
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import RecommendationsModal from '../components/RecommendationsModal';
+import { Modal } from '../components/ui';
 
 const DescargaCertificado = () => {
   const [codigoVerificacion, setCodigoVerificacion] = useState('');
@@ -20,6 +22,11 @@ const DescargaCertificado = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [descargando, setDescargando] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewSourceUrl, setPreviewSourceUrl] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
   const [showRecModal, setShowRecModal] = useState(true);
 
   const HORARIO_LABEL = 'Lun–Vie 09:00–15:00';
@@ -56,18 +63,23 @@ const DescargaCertificado = () => {
       setError('');
       setCertificado(null);
 
-      const response = await fetch(`${API_BASE}/certificados-publicos/verificar/${codigoVerificacion}`);
-      
+      let response = await fetch(`${API_BASE}/certificados-publicos/verificar/${codigoVerificacion}`);
+      let data;
       if (!response.ok) {
         if (response.status === 404) {
-          setError('Certificado no encontrado. Verifique el código ingresado.');
+          const r2 = await fetch(`${API_BASE}/certificados-v2/public/verify/${codigoVerificacion}`);
+          if (!r2.ok) {
+            setError('Certificado no encontrado. Verifique el código ingresado.');
+            return;
+          }
+          data = await r2.json();
         } else {
           setError('Error al buscar el certificado. Por favor intente nuevamente.');
+          return;
         }
-        return;
+      } else {
+        data = await response.json();
       }
-      
-      const data = await response.json();
 
       // Mapear campos del backend público al modelo usado en la vista
       const certificadoEncontrado = {
@@ -103,7 +115,7 @@ const DescargaCertificado = () => {
       
       // Agregar timestamp para evitar cache del navegador
       const timestamp = new Date().getTime();
-      const response = await fetch(`${API_BASE}/certificados-publicos/descargar/${certificado.codigo_verificacion}?download=1&v=${timestamp}`, {
+      let response = await fetch(`${API_BASE}/certificados-publicos/descargar/${certificado.codigo_verificacion}?download=1&v=${timestamp}`, {
         cache: 'no-cache',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -112,6 +124,10 @@ const DescargaCertificado = () => {
         }
       });
       
+      if (!response.ok) {
+        response = await fetch(`${API_BASE}/certificados-v2/download/${certificado.codigo_verificacion}?download=1&v=${timestamp}`, { cache: 'no-cache' });
+      }
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -132,6 +148,38 @@ const DescargaCertificado = () => {
     } finally {
       setDescargando(false);
     }
+  };
+
+  const openPreview = async () => {
+    if (!certificado) return;
+    try {
+      const ts = Date.now();
+      const src = `${API_BASE}/certificados-publicos/descargar/${certificado.codigo_verificacion}?v=${ts}`;
+      setPreviewSourceUrl(src);
+      setPreviewLoading(true);
+      setPreviewError('');
+      setPreviewOpen(true);
+      let res = await fetch(src, { cache: 'no-cache' });
+      if (!res.ok) throw new Error('fetch');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+    } catch (_) {
+      try {
+        const src2 = `${API_BASE}/certificados-v2/download/${certificado.codigo_verificacion}?v=${Date.now()}`;
+        setPreviewSourceUrl(src2);
+        const res2 = await fetch(src2, { cache: 'no-cache' });
+        if (!res2.ok) throw new Error('fetch2');
+        const blob2 = await res2.blob();
+        const url2 = URL.createObjectURL(blob2);
+        setPreviewUrl(url2);
+        setPreviewError('');
+      } catch (e2) {
+        setPreviewUrl('');
+        setPreviewError('No se pudo cargar la vista previa');
+      }
+    }
+    setPreviewLoading(false);
   };
 
   const formatDate = (dateString) => {
@@ -347,8 +395,18 @@ const DescargaCertificado = () => {
               </details>
             )}
 
-            {/* Botón de descarga */}
-            <div className="flex items-center justify-end">
+            {/* Acciones */}
+            <div className="flex items-center justify-end gap-2">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={openPreview}
+                disabled={descargando || fueraHorario}
+                className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-2 text-sm"
+              >
+                <Eye size={16} />
+                Ver PDF
+              </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -362,6 +420,45 @@ const DescargaCertificado = () => {
             </div>
           </motion.div>
         )}
+
+        {/* Modal de vista previa */}
+        <Modal
+          isOpen={previewOpen}
+          onClose={() => { if (previewUrl) { try { URL.revokeObjectURL(previewUrl); } catch(_) {} } setPreviewOpen(false); setPreviewUrl(''); setPreviewSourceUrl(''); setPreviewError(''); }}
+          title="Vista previa"
+          size="lg"
+          footer={
+            <>
+              <button className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded" onClick={() => { setPreviewOpen(false); setPreviewUrl(''); }}>Cerrar</button>
+              {previewSourceUrl && (
+                <a className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded" href={`${previewSourceUrl}&download=1`} target="_blank" rel="noreferrer">Descargar</a>
+              )}
+            </>
+          }
+        >
+          <div className="h-[70vh]">
+            {previewLoading ? (
+              <div className="h-full flex items-center justify-center text-sm text-gray-600">Cargando...</div>
+            ) : previewError ? (
+              <div className="h-full w-full flex items-center justify-center text-center px-4">
+                <div>
+                  <div className="text-sm font-medium text-red-600">{previewError}</div>
+                  {previewSourceUrl && (
+                    <div className="mt-2">
+                      <a href={previewSourceUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 underline text-sm">Abrir en nueva pestaña</a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (previewUrl ? (
+              <iframe title="preview" src={previewUrl} className="w-full h-full rounded border" />
+            ) : previewSourceUrl ? (
+              <iframe title="preview" src={previewSourceUrl} className="w-full h-full rounded border" />
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm text-gray-600">Sin contenido</div>
+            ))}
+          </div>
+        </Modal>
 
         {/* Modal de recomendaciones */}
         <RecommendationsModal

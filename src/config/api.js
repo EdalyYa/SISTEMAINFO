@@ -31,9 +31,6 @@ export const ASSET_BASE = API_HOST;
 
 const api = axios.create({
   baseURL: sanitizeBase(API_BASE) || API_BASE,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Interceptor para agregar token de autenticación
@@ -42,6 +39,15 @@ api.interceptors.request.use(
     const token = (typeof window !== 'undefined' && window.sessionStorage.getItem('token')) || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Si el cuerpo es FormData, permitir que axios establezca el boundary automáticamente
+    if (config.data instanceof FormData) {
+      if (config.headers && 'Content-Type' in config.headers) {
+        delete config.headers['Content-Type'];
+      }
+    } else {
+      // Asegurar JSON en peticiones normales
+      config.headers['Content-Type'] = 'application/json';
     }
     return config;
   },
@@ -56,7 +62,7 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       // Limpiar ambas ubicaciones de almacenamiento
       try {
         if (typeof window !== 'undefined') {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '@/config/api';
+import { ASSET_BASE } from '@/config/api';
 import { 
   Palette, 
   Upload, 
@@ -14,26 +15,371 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 
-const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado }) => {
+const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado, initialSelectedElement, pdfUrl, onlyPDF }) => {
+  // Helper para resolver URLs de fondo desde backend
+  const resolveAssetUrl = (url) => {
+    if (!url) return null;
+    const s = String(url);
+    if (s.startsWith('http') || s.startsWith('data:')) return s;
+    // Evitar doble slash
+    return `${ASSET_BASE}${s.startsWith('/') ? s : `/${s}`}`;
+  };
+
+  // Fetch con token y manejo 401
+  const authedFetch = async (input, init = {}) => {
+    const token = (typeof window !== 'undefined' && window.sessionStorage.getItem('token')) || localStorage.getItem('token');
+    const headers = { ...(init.headers || {}) };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const resp = await fetch(input, { ...init, headers });
+    if (resp.status === 401) {
+      try {
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.removeItem('token');
+        }
+      } catch (_) {}
+      localStorage.removeItem('token');
+      window.location.href = '/panel/login';
+      throw new Error('No autorizado. Redirigiendo a inicio de sesión.');
+    }
+    return resp;
+  };
+  // Configuración por defecto para garantizar que siempre existen las claves
+  const DEFAULT_CONFIG = {
+    nombreInstituto: { x: 400, y: 120, fontSize: 18, color: '#000000', fontFamily: 'serif', fontWeight: 'normal', fontStyle: 'normal', visible: true },
+    titulo: { x: 400, y: 200, fontSize: 32, color: '#000000', fontFamily: 'serif', fontWeight: 'bold', fontStyle: 'normal', visible: true },
+    otorgado: { x: 400, y: 250, fontSize: 16, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal', visible: true },
+    nombreEstudiante: { x: 400, y: 280, fontSize: 24, color: '#000000', fontFamily: 'serif', fontWeight: 'bold', fontStyle: 'normal', visible: true },
+    descripcion: { x: 400, y: 350, fontSize: 16, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal', visible: true },
+    // Nuevos campos compatibles con tu JSON
+    rolParticipacion: { x: 300, y: 330, fontSize: 14, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'bold', fontStyle: 'normal', visible: true },
+    eventoDetalle: { x: 420, y: 360, fontSize: 14, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal', visible: true },
+    periodoHoras: { x: 180, y: 388, fontSize: 14, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal', visible: true },
+    fecha: { x: 400, y: 450, fontSize: 14, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal', visible: true },
+    codigo: { x: 400, y: 500, fontSize: 12, color: '#666666', fontFamily: 'monospace', fontWeight: 'normal', fontStyle: 'normal', visible: true },
+    firmaIzquierda: { x: 200, y: 550, width: 150, height: 80 },
+    firmaDerecha: { x: 550, y: 550, width: 150, height: 80 },
+    qr: { x: 650, y: 450, width: 80, height: 80, visible: true }
+  };
+
+  // Renderiza el área principal según modo de vista previa
+  const renderArea = () => {
+    if (previsualizacion) {
+      return (
+                <div className="flex flex-col items-center h-full">
+                  <div className="mb-4">
+                    <h2 className="text-2xl font-bold text-gray-800 text-center">Vista Previa del Certificado</h2>
+                    <p className="text-gray-600 text-center">Así se verá el certificado final</p>
+                  </div>
+                  <div 
+                    className="relative bg-white border-2 border-gray-300 shadow-lg overflow-hidden"
+                    style={{ width: '800px', height: '600px', transform: `scale(${0.8 * zoom})`, transformOrigin: 'top center' }}
+                  >
+                    {/* Fondo: PDF si existe, sino imagen de plantilla, sino gris */}
+                    {pdfUrl ? (
+                      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+                        <object
+                          data={pdfUrl}
+                          type="application/pdf"
+                          className="w-full h-full"
+                          title="Vista previa completa del certificado"
+                        />
+                      </div>
+                    ) : (configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado) ? (
+                      <img
+                        src={resolveAssetUrl(configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado)}
+                        alt="Fondo del certificado"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ zIndex: 0 }}
+                        onError={(e) => {
+                          const badUrl = configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado;
+                          console.error('[CertEditor] Error cargando fondo:', badUrl, '→', e?.target?.src);
+                          setConfiguracionActual(prev => ({ ...prev, fondoCertificado: null }));
+                        }}
+                      />
+                    ) : (
+                      // Sin fondo por defecto: mantener fondo limpio en blanco
+                      <div
+                        className="absolute inset-0 bg-white"
+                        style={{ zIndex: 0 }}
+                      />
+                    )}
+    
+                    {/* Logos removidos por deprecación */}
+
+                    {/* Firmas */}
+                    <div
+                      className="absolute flex flex-col items-center justify-end"
+                      style={{
+                        left: configuracionActual.configuracion.firmaIzquierda.x,
+                        top: configuracionActual.configuracion.firmaIzquierda.y,
+                        width: configuracionActual.configuracion.firmaIzquierda.width,
+                        height: configuracionActual.configuracion.firmaIzquierda.height,
+                        zIndex: 10
+                      }}
+                    >
+                      <div className="border-t-2 border-gray-800 w-full mb-1"></div>
+                      <div className="text-xs text-center font-medium">Director</div>
+                    </div>
+                    <div
+                      className="absolute flex flex-col items-center justify-end"
+                      style={{
+                        left: configuracionActual.configuracion.firmaDerecha.x,
+                        top: configuracionActual.configuracion.firmaDerecha.y,
+                        width: configuracionActual.configuracion.firmaDerecha.width,
+                        height: configuracionActual.configuracion.firmaDerecha.height,
+                        zIndex: 10
+                      }}
+                    >
+                      <div className="border-t-2 border-gray-800 w-full mb-1"></div>
+                      <div className="text-xs text-center font-medium">Coordinador</div>
+                    </div>
+    
+                    {/* QR */}
+                    {configuracionActual.configuracion.qr.visible && (
+                      <div
+                        className="absolute border border-gray-300 bg-white text-gray-600 text-xs"
+                        style={{
+                          left: configuracionActual.configuracion.qr.x,
+                          top: configuracionActual.configuracion.qr.y,
+                          width: configuracionActual.configuracion.qr.width,
+                          height: configuracionActual.configuracion.qr.height,
+                          zIndex: 10
+                        }}
+                      >
+                        <div className="w-full h-full flex items-center justify-center">
+                          QR<br/>Code
+                        </div>
+                      </div>
+                    )}
+    
+                    {/* Textos */}
+                    {Object.keys(TEXT_KEYS).map((key) => {
+                      const cfg = configuracionActual.configuracion[key];
+                      if (!cfg || cfg.visible === false) return null;
+                      return (
+                        <div
+                          key={key}
+                          className="absolute text-center"
+                          style={{ left: cfg.x, top: cfg.y, zIndex: 10, transform: 'translateX(-50%)' }}
+                        >
+                          <span
+                            style={{
+                              fontSize: `${cfg.fontSize}px`,
+                              fontFamily: cfg.fontFamily || 'Inter, system-ui, sans-serif',
+                              fontWeight: cfg.fontWeight || 400,
+                              fontStyle: cfg.fontStyle || 'normal',
+                              color: cfg.color || '#111827'
+                            }}
+                          >
+                            {getTextValue(key)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+      );
+    }
+    return (
+                <div
+                  className="h-full border-2 border-dashed border-gray-300 rounded-lg relative bg-gray-50 overflow-hidden"
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  {/* Área fija centrada 800x600 */}
+                  <div
+                    className="absolute top-1/2 left-1/2"
+                    style={{ width: 800, height: 600, transform: 'translate(-50%, -50%)', zIndex: 0 }}
+                  >
+                    <div className="relative w-full h-full">
+                      {/* Fondo: PDF si hay, si no imagen de plantilla, si no gris */}
+                      {pdfUrl ? (
+                        <object
+                          data={pdfUrl}
+                          type="application/pdf"
+                          className="w-full h-full"
+                          title="Vista completa del certificado"
+                        />
+                      ) : (configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado) ? (
+                        <img
+                          src={resolveAssetUrl(configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado)}
+                          alt="Fondo del certificado"
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            const badUrl = configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado;
+                            console.error('[CertEditor] Error cargando fondo:', badUrl, '→', e?.target?.src);
+                            setConfiguracionActual(prev => ({ ...prev, fondoCertificado: null }));
+                          }}
+                        />
+                      ) : (
+                        // Mantener fondo en blanco si no hay imagen configurada
+                        <div
+                          className="absolute inset-0 bg-white"
+                          style={{ zIndex: 0 }}
+                        />
+                      )}
+    
+                      {/* Logos removidos por deprecación */}
+    
+                      {/* Firmas arrastrables */}
+                      <div
+                        className="absolute border border-green-400 bg-white bg-opacity-80 cursor-move"
+                        style={{
+                          left: configuracionActual.configuracion.firmaIzquierda.x,
+                          top: configuracionActual.configuracion.firmaIzquierda.y,
+                          width: configuracionActual.configuracion.firmaIzquierda.width,
+                          height: configuracionActual.configuracion.firmaIzquierda.height
+                        }}
+                        draggable={!editTextsOnly}
+                        onDragStart={(e) => { if (!editTextsOnly) handleDragStart(e, 'firmaIzquierda'); }}
+                        onClick={() => { if (!editTextsOnly) handleElementClick('firmaIzquierda'); }}
+                      >
+                        <div className="border-t-2 border-gray-800 w-full mb-1"></div>
+                        <div className="text-xs text-center font-medium">Director</div>
+                      </div>
+                      <div
+                        className="absolute border border-yellow-400 bg-white bg-opacity-80 cursor-move"
+                        style={{
+                          left: configuracionActual.configuracion.firmaDerecha.x,
+                          top: configuracionActual.configuracion.firmaDerecha.y,
+                          width: configuracionActual.configuracion.firmaDerecha.width,
+                          height: configuracionActual.configuracion.firmaDerecha.height
+                        }}
+                        draggable={!editTextsOnly}
+                        onDragStart={(e) => { if (!editTextsOnly) handleDragStart(e, 'firmaDerecha'); }}
+                        onClick={() => { if (!editTextsOnly) handleElementClick('firmaDerecha'); }}
+                      >
+                        <div className="border-t-2 border-gray-800 w-full mb-1"></div>
+                        <div className="text-xs text-center font-medium">Coordinador</div>
+                      </div>
+    
+                      {/* QR */}
+                      {configuracionActual.configuracion.qr.visible && (
+                        <div
+                          className="absolute border border-gray-400 bg-white bg-opacity-80"
+                          style={{
+                            left: configuracionActual.configuracion.qr.x,
+                            top: configuracionActual.configuracion.qr.y,
+                            width: configuracionActual.configuracion.qr.width,
+                            height: configuracionActual.configuracion.qr.height
+                          }}
+                          draggable={!editTextsOnly}
+                          onDragStart={(e) => { if (!editTextsOnly) handleDragStart(e, 'qr'); }}
+                          onClick={() => { if (!editTextsOnly) handleElementClick('qr'); }}
+                        >
+                          <div className="w-full h-full flex items-center justify-center text-xs text-gray-600">
+                            QR<br/>Code
+                          </div>
+                        </div>
+                      )}
+    
+                      {/* Textos editables */}
+                      {Object.keys(TEXT_KEYS).map((key) => {
+                        const cfg = configuracionActual.configuracion[key];
+                        if (!cfg || cfg.visible === false) return null;
+                        return (
+                          <div
+                            key={key}
+                            className="absolute border border-purple-400 bg-white bg-opacity-80 cursor-move"
+                            style={{ left: cfg.x, top: cfg.y, transform: 'translateX(-50%)' }}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, key)}
+                            onClick={() => handleElementClick(key)}
+                          >
+                            <span
+                              style={{
+                                fontSize: `${cfg.fontSize}px`,
+                                fontFamily: cfg.fontFamily || 'Inter, system-ui, sans-serif',
+                                fontWeight: cfg.fontWeight || 400,
+                                fontStyle: cfg.fontStyle || 'normal',
+                                color: cfg.color || '#111827'
+                              }}
+                            >
+                              {getTextValue(key)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+    
+                    {/* Indicadores de ayuda */}
+                    <div className="absolute bottom-4 left-4 bg-white bg-opacity-95 rounded-lg p-3 text-xs text-gray-600 shadow-lg">
+                      <div className="font-medium text-gray-800 mb-2">Controles:</div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        <span>Arrastra para mover</span>
+                      </div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+                        <span>Click para seleccionar y editar</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <span>Vista Previa para ver resultado</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+    );
+  };
+
+  const normalizeConfig = (configObj) => {
+    try {
+      const rawCfg = (configObj?.campos_json ?? configObj?.configuracion);
+      const incoming = typeof rawCfg === 'string' ? JSON.parse(rawCfg) : (rawCfg || {});
+      // Resolver imagen de fondo desde posibles orígenes
+      let fondoCertificadoResolved = configObj?.fondoCertificado || configObj?.fondo_url || configObj?.fondo_certificado || null;
+      if (typeof fondoCertificadoResolved === 'string') {
+        const s = String(fondoCertificadoResolved);
+        if (s.startsWith('http') || s.startsWith('data:') || s.startsWith('/uploads/')) {
+          fondoCertificadoResolved = s;
+        } else if (s.trim().length > 0) {
+          fondoCertificadoResolved = `/uploads/certificados/${s.replace(/^\/+/, '')}`;
+        } else {
+          fondoCertificadoResolved = null;
+        }
+      }
+      const cfg = {
+        nombreInstituto: { ...DEFAULT_CONFIG.nombreInstituto, ...(incoming.nombreInstituto || {}) },
+        titulo: { ...DEFAULT_CONFIG.titulo, ...(incoming.titulo || {}) },
+        otorgado: { ...DEFAULT_CONFIG.otorgado, ...(incoming.otorgado || {}) },
+        nombreEstudiante: { ...DEFAULT_CONFIG.nombreEstudiante, ...(incoming.nombreEstudiante || {}) },
+        descripcion: { ...DEFAULT_CONFIG.descripcion, ...(incoming.descripcion || {}) },
+        rolParticipacion: { ...DEFAULT_CONFIG.rolParticipacion, ...(incoming.rolParticipacion || {}) },
+        eventoDetalle: { ...DEFAULT_CONFIG.eventoDetalle, ...(incoming.eventoDetalle || {}) },
+        periodoHoras: { ...DEFAULT_CONFIG.periodoHoras, ...(incoming.periodoHoras || {}) },
+        fecha: { ...DEFAULT_CONFIG.fecha, ...(incoming.fecha || {}) },
+        codigo: { ...DEFAULT_CONFIG.codigo, ...(incoming.codigo || {}) },
+        firmaIzquierda: { ...DEFAULT_CONFIG.firmaIzquierda, ...(incoming.firmaIzquierda || {}) },
+        firmaDerecha: { ...DEFAULT_CONFIG.firmaDerecha, ...(incoming.firmaDerecha || {}) },
+        qr: { ...DEFAULT_CONFIG.qr, ...(incoming.qr || {}) }
+      };
+      // Asegurar visibilidad por defecto en textos (true si no está definida)
+      Object.keys(cfg).forEach((k) => {
+        if (k === 'firmaIzquierda' || k === 'firmaDerecha') return;
+        const v = cfg[k];
+        if (typeof v.visible === 'undefined') {
+          v.visible = (k === 'qr' && typeof configObj?.incluye_qr !== 'undefined') ? !!configObj.incluye_qr : true;
+        } else {
+          v.visible = !!v.visible;
+        }
+      });
+      return {
+        ...configObj,
+        configuracion: cfg,
+        fondoCertificado: fondoCertificadoResolved
+      };
+    } catch (e) {
+      return {
+        ...configObj,
+        configuracion: DEFAULT_CONFIG
+      };
+    }
+  };
   const [configuraciones, setConfiguraciones] = useState([]);
   const [configuracionActual, setConfiguracionActual] = useState({
     nombre: '',
-    configuracion: {
-      logoIzquierdo: { x: 50, y: 50, width: 100, height: 100 },
-      logoDerecho: { x: 650, y: 50, width: 100, height: 100 },
-      nombreInstituto: { x: 400, y: 120, fontSize: 18, color: '#000000', fontFamily: 'serif', fontWeight: 'normal', fontStyle: 'normal' },
-      titulo: { x: 400, y: 200, fontSize: 32, color: '#000000', fontFamily: 'serif', fontWeight: 'bold', fontStyle: 'normal' },
-      otorgado: { x: 400, y: 250, fontSize: 16, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal' },
-      nombreEstudiante: { x: 400, y: 280, fontSize: 24, color: '#000000', fontFamily: 'serif', fontWeight: 'bold', fontStyle: 'normal' },
-      descripcion: { x: 400, y: 350, fontSize: 16, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal' },
-      fecha: { x: 400, y: 450, fontSize: 14, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal' },
-      codigo: { x: 400, y: 500, fontSize: 12, color: '#666666', fontFamily: 'monospace', fontWeight: 'normal', fontStyle: 'normal' },
-      firmaIzquierda: { x: 200, y: 550, width: 150, height: 80 },
-      firmaDerecha: { x: 550, y: 550, width: 150, height: 80 },
-      qr: { x: 650, y: 450, width: 80, height: 80 }
-    },
-    logoIzquierdo: null,
-    logoDerecho: null,
+    configuracion: DEFAULT_CONFIG,
     fondoCertificado: null,
     activa: false
   });
@@ -44,6 +390,125 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
   const [draggedElement, setDraggedElement] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [selectedElement, setSelectedElement] = useState(null);
+  // Controles avanzados de edición
+  const [showRulers, setShowRulers] = useState(false);
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [gridSize, setGridSize] = useState(10); // px
+  const [zoom, setZoom] = useState(1); // 1 = 100%
+  // Posicionamiento asistido
+  const [assistedMode, setAssistedMode] = useState(false);
+  const [baselineGuides, setBaselineGuides] = useState([]); // líneas Y para alinear textos
+  const [snapToGuides, setSnapToGuides] = useState(true);
+  const snapThreshold = 6; // px
+  const [localOnlyPDF, setLocalOnlyPDF] = useState(onlyPDF);
+  // Modo de edición: solo permitir mover/editar textos
+  const [editTextsOnly, setEditTextsOnly] = useState(true);
+  const isTextElement = (key) => !['firmaIzquierda', 'firmaDerecha', 'qr'].includes(key);
+  // Visibilidad de textos (para plantillas que ya tienen textos impresos)
+  const TEXT_KEYS = {
+    nombreInstituto: 'Nombre del Instituto',
+    titulo: 'Título (CERTIFICADO)',
+    otorgado: 'Etiqueta “Otorgado a”',
+    nombreEstudiante: 'Nombre del Estudiante',
+    descripcion: 'Descripción (motivo)',
+    rolParticipacion: 'Rol de participación',
+    eventoDetalle: 'Detalle del evento',
+    periodoHoras: 'Periodo y horas',
+    fecha: 'Fecha',
+    codigo: 'Código de verificación'
+  };
+  const [visibleTextElements, setVisibleTextElements] = useState({
+    nombreInstituto: true,
+    titulo: true,
+    otorgado: true,
+    nombreEstudiante: true,
+    descripcion: true,
+    rolParticipacion: true,
+    eventoDetalle: true,
+    periodoHoras: true,
+    fecha: true,
+    codigo: true
+  });
+
+  // Log de diagnóstico para la URL del fondo
+  useEffect(() => {
+    const src = configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado;
+    if (src) {
+      const resolved = resolveAssetUrl(src);
+      console.log('[CertEditor] Fondo configurado:', src, '→ Resuelto:', resolved);
+    } else {
+      console.log('[CertEditor] Sin imagen de fondo configurada.');
+    }
+  }, [configuracionActual.fondoCertificado, configuracionActual.fondoCertificadoPreview]);
+
+  // Sincronizar visibilidad con la configuración cargada
+  useEffect(() => {
+    if (!configuracionActual?.configuracion) return;
+    const next = {};
+    Object.keys(TEXT_KEYS).forEach((k) => {
+      const cfg = configuracionActual.configuracion[k];
+      next[k] = cfg && typeof cfg.visible !== 'undefined' ? !!cfg.visible : true;
+    });
+    setVisibleTextElements(next);
+  }, [configuracionActual]);
+
+  // Texto por defecto usando datos cuando existan
+  const formatDate = (d) => {
+    try {
+      return new Date(d).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch { return ''; }
+  };
+  const getTextValue = (key) => {
+    const d = datosActuales || certificadoEjemplo || {};
+    switch (key) {
+      case 'nombreInstituto':
+        return 'INSTITUTO DE INFORMÁTICA UNA-PUNO';
+      case 'titulo':
+        return 'CERTIFICADO';
+      case 'otorgado':
+        return 'Otorgado a:';
+      case 'nombreEstudiante':
+        return d.nombre_completo || '[NOMBRE DEL ESTUDIANTE]';
+      case 'descripcion':
+        return d.nombre_evento
+          ? `Por haber participado en "${d.nombre_evento}".`
+          : 'Por haber participado en la capacitación indicada.';
+      case 'rolParticipacion':
+        return d.rol || 'ROL DE PARTICIPACIÓN';
+      case 'eventoDetalle':
+        return d.nombre_evento ? `en ${d.nombre_evento}` : 'Detalle del evento';
+      case 'periodoHoras':
+        return (d.fecha_inicio || d.fecha_fin)
+          ? `Del ${d.fecha_inicio ? formatDate(d.fecha_inicio) : '[FECHA INICIO]'} al ${d.fecha_fin ? formatDate(d.fecha_fin) : '[FECHA FIN]'}${d.horas ? ` (${d.horas} horas)` : ''}`
+          : 'Periodo y horas';
+      case 'fecha':
+        return formatDate(d.fecha_emision || Date.now());
+      case 'codigo':
+        return `Código: ${d.codigo_verificacion || 'CERT-2025-001'}`;
+      default:
+        return key;
+    }
+  };
+
+  // Vista simple del panel izquierdo (solo textos y lista de campos)
+  const simpleLeftView = editTextsOnly || !!pdfUrl;
+
+  // Entrar en posicionamiento asistido automáticamente en vista simple
+  useEffect(() => {
+    if (simpleLeftView) {
+      setAssistedMode(true);
+    }
+  }, [simpleLeftView]);
+
+  // Enfoque inicial cuando se abre desde la previsualización con intención de editar texto
+  // Evitar abrir el panel de propiedades por defecto si hay plantilla PDF
+  useEffect(() => {
+    const shouldAutoSelect = Boolean(initialSelectedElement) && !pdfUrl;
+    if (shouldAutoSelect) {
+      setSelectedElement(initialSelectedElement);
+      setEditTextsOnly(true);
+    }
+  }, [initialSelectedElement, pdfUrl]);
 
   useEffect(() => {
     cargarConfiguraciones();
@@ -56,6 +521,80 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
     }
   }, [datosEstudiante]);
 
+  // Ignorar siempre la última selección local: mantener únicamente la activa del servidor
+  // Al cargar configuraciones, no se realiza ninguna sustitución basada en localStorage
+  // para evitar que un diseño sin fondo sobrescriba la activa.
+  // Esta decisión se aplica por preferencia del usuario.
+
+  // Mantener sync del modo soloPDF con prop
+  useEffect(() => {
+    setLocalOnlyPDF(onlyPDF);
+  }, [onlyPDF]);
+
+  // Modo solo PDF: vista limpia con opción rápida para entrar a edición asistida
+  if (localOnlyPDF && pdfUrl) {
+    return (
+      <div className="relative w-full h-[80vh]">
+        <object
+          data={pdfUrl}
+          type="application/pdf"
+          className="w-full h-full border border-gray-300 rounded-lg"
+          title="Certificado (vista completa)"
+        >
+          <div className="flex items-center justify-center h-full text-gray-500">
+            <p>No se puede mostrar el PDF en este navegador.</p>
+            <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-blue-600 underline">Abrir en nueva pestaña</a>
+          </div>
+        </object>
+        <div className="absolute top-3 right-3 flex gap-2">
+          <button
+            className="px-3 py-1 text-xs rounded bg-purple-600 text-white hover:bg-purple-700"
+            onClick={() => { setLocalOnlyPDF(false); setAssistedMode(true); }}
+          >
+            Editar posiciones
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Nudge por teclado: flechas (Shift = 10px)
+  useEffect(() => {
+    if (!assistedMode || !selectedElement) return;
+    const handler = (e) => {
+      const delta = e.shiftKey ? 10 : 1;
+      const cfg = configuracionActual.configuracion[selectedElement] || { x: 0, y: 0 };
+      let x = cfg.x;
+      let y = cfg.y;
+      switch (e.key) {
+        case 'ArrowUp':
+          y = cfg.y - delta; break;
+        case 'ArrowDown':
+          y = cfg.y + delta; break;
+        case 'ArrowLeft':
+          x = cfg.x - delta; break;
+        case 'ArrowRight':
+          x = cfg.x + delta; break;
+        default:
+          return;
+      }
+      // Snapping a cuadrícula
+      if (snapToGrid && gridSize > 0) {
+        x = Math.round(x / gridSize) * gridSize;
+        y = Math.round(y / gridSize) * gridSize;
+      }
+      // Snapping a guías horizontales
+      if (snapToGuides && baselineGuides.length > 0) {
+        const nearest = baselineGuides.reduce((acc, g) => Math.abs(y - g) < Math.abs(y - acc) ? g : acc, baselineGuides[0]);
+        if (Math.abs(y - nearest) <= snapThreshold) y = nearest;
+      }
+      updateElementProperty(selectedElement, 'x', Math.max(0, Math.min(x, 800)));
+      updateElementProperty(selectedElement, 'y', Math.max(0, Math.min(y, 600)));
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [assistedMode, selectedElement, configuracionActual, snapToGrid, gridSize, snapToGuides, baselineGuides]);
+
   // Efecto separado para cuando cambian los datos del estudiante
   useEffect(() => {
     if (datosEstudiante) {
@@ -65,14 +604,10 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
 
   const cargarConfiguraciones = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/admin/certificados/disenos', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await authedFetch(`${API_BASE}/admin/certificados/disenos`);
       if (response.ok) {
         const data = await response.json();
+        console.log('[CertEditor] Diseños disponibles:', data.map(d => ({ id: d.id, nombre: d.nombre, activa: d.activa, fondoCertificado: d.fondoCertificado })));
         setConfiguraciones(data);
       }
     } catch (error) {
@@ -82,16 +617,15 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
 
   const cargarConfiguracionPorDefecto = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/admin/certificados/disenos/activa/current', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // No existe endpoint dedicado en backend; obtener lista y elegir el activo
+      const response = await authedFetch(`${API_BASE}/admin/certificados/disenos`);
       if (response.ok) {
-        const data = await response.json();
-        if (data) {
-          setConfiguracionActual(data);
+        const list = await response.json();
+        if (Array.isArray(list) && list.length > 0) {
+          const activo = list.find((d) => d.activa === 1 || d.activa === true);
+          if (activo) {
+            setConfiguracionActual(normalizeConfig(activo));
+          }
         }
       }
     } catch (error) {
@@ -101,7 +635,7 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
 
   const cargarCertificadoEjemplo = async () => {
     try {
-      const response = await fetch(`${API_BASE}/admin/certificados?limit=1`);
+      const response = await authedFetch(`${API_BASE}/admin/certificados?limit=1`);
       if (response.ok) {
         const data = await response.json();
         if (data.certificados && data.certificados.length > 0) {
@@ -150,7 +684,7 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
 
     try {
       setLoading(true);
-      const response = await fetch('/admin/certificados/disenos/upload', {
+      const response = await fetch(`${API_BASE}/admin/certificados/disenos/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -208,8 +742,8 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
       setLoading(true);
       const method = configuracionActual.id ? 'PUT' : 'POST';
       const url = configuracionActual.id 
-        ? `/admin/certificados/disenos/update-with-urls/${configuracionActual.id}`
-        : '/admin/certificados/disenos/save-with-urls';
+        ? `${API_BASE}/admin/certificados/disenos/update-with-urls/${configuracionActual.id}`
+        : `${API_BASE}/admin/certificados/disenos/save-with-urls`;
 
       const token = localStorage.getItem('token');
       const response = await fetch(url, {
@@ -221,8 +755,6 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
         body: JSON.stringify({
           nombre: configuracionActual.nombre,
           configuracion: configuracionActual.configuracion,
-          logoIzquierdo: configuracionActual.logoIzquierdo,
-          logoDerecho: configuracionActual.logoDerecho,
           fondoCertificado: configuracionActual.fondoCertificado,
           activa: configuracionActual.activa
         })
@@ -237,16 +769,12 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
             ...prev, 
             id: data.id,
             // Limpiar previsualizaciones después de guardar exitosamente
-            logoIzquierdoPreview: null,
-            logoDerechoPreview: null,
             fondoCertificadoPreview: null
           }));
         } else {
           // Si es una actualización, también limpiar previsualizaciones
           setConfiguracionActual(prev => ({
             ...prev,
-            logoIzquierdoPreview: null,
-            logoDerechoPreview: null,
             fondoCertificadoPreview: null
           }));
         }
@@ -267,26 +795,9 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
   const resetearConfiguracion = () => {
     setConfiguracionActual({
       nombre: '',
-      configuracion: {
-        logoIzquierdo: { x: 50, y: 50, width: 100, height: 100 },
-        logoDerecho: { x: 650, y: 50, width: 100, height: 100 },
-        nombreInstituto: { x: 400, y: 120, fontSize: 18, color: '#000000', fontFamily: 'serif', fontWeight: 'normal', fontStyle: 'normal' },
-        titulo: { x: 400, y: 200, fontSize: 32, color: '#000000', fontFamily: 'serif', fontWeight: 'bold', fontStyle: 'normal' },
-        otorgado: { x: 400, y: 250, fontSize: 16, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal' },
-        nombreEstudiante: { x: 400, y: 280, fontSize: 24, color: '#000000', fontFamily: 'serif', fontWeight: 'bold', fontStyle: 'normal' },
-        descripcion: { x: 400, y: 350, fontSize: 16, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal' },
-        fecha: { x: 400, y: 450, fontSize: 14, color: '#000000', fontFamily: 'sans-serif', fontWeight: 'normal', fontStyle: 'normal' },
-        codigo: { x: 400, y: 500, fontSize: 12, color: '#666666', fontFamily: 'monospace', fontWeight: 'normal', fontStyle: 'normal' },
-        firmaIzquierda: { x: 200, y: 550, width: 150, height: 80 },
-        firmaDerecha: { x: 550, y: 550, width: 150, height: 80 },
-        qr: { x: 650, y: 450, width: 80, height: 80 }
-      },
-      logoIzquierdo: null,
-      logoDerecho: null,
+      configuracion: DEFAULT_CONFIG,
       fondoCertificado: null,
       // Limpiar también las previsualizaciones
-      logoIzquierdoPreview: null,
-      logoDerechoPreview: null,
       fondoCertificadoPreview: null,
       activa: false
     });
@@ -311,8 +822,19 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
     if (!draggedElement) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - dragOffset.x;
-    const y = e.clientY - rect.top - dragOffset.y;
+    let x = e.clientX - rect.left - dragOffset.x;
+    let y = e.clientY - rect.top - dragOffset.y;
+
+    // Ajuste a cuadrícula si está habilitado
+    if (snapToGrid && gridSize > 0) {
+      x = Math.round(x / gridSize) * gridSize;
+      y = Math.round(y / gridSize) * gridSize;
+    }
+    // Ajuste a guías horizontales si está habilitado
+    if (snapToGuides && baselineGuides.length > 0) {
+      const nearest = baselineGuides.reduce((acc, g) => Math.abs(y - g) < Math.abs(y - acc) ? g : acc, baselineGuides[0]);
+      if (Math.abs(y - nearest) <= snapThreshold) y = nearest;
+    }
 
     setConfiguracionActual(prev => ({
       ...prev,
@@ -330,28 +852,41 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
   };
 
   const updateElementProperty = (elementKey, property, value) => {
+    let newValue = value;
+    if (assistedMode && (property === 'x' || property === 'y')) {
+      // Snapping al editar manualmente coordenadas
+      if (property === 'x' && snapToGrid && gridSize > 0) {
+        newValue = Math.round(newValue / gridSize) * gridSize;
+      }
+      if (property === 'y') {
+        if (snapToGrid && gridSize > 0) newValue = Math.round(newValue / gridSize) * gridSize;
+        if (snapToGuides && baselineGuides.length > 0) {
+          const nearest = baselineGuides.reduce((acc, g) => Math.abs(newValue - g) < Math.abs(newValue - acc) ? g : acc, baselineGuides[0]);
+          if (Math.abs(newValue - nearest) <= snapThreshold) newValue = nearest;
+        }
+      }
+    }
     setConfiguracionActual(prev => ({
       ...prev,
       configuracion: {
         ...prev.configuracion,
         [elementKey]: {
           ...prev.configuracion[elementKey],
-          [property]: value
+          [property]: newValue
         }
       }
     }));
   };
 
   const handleElementClick = (elementKey) => {
+    if (editTextsOnly && !isTextElement(elementKey)) return;
     setSelectedElement(elementKey);
   };
 
   const cargarConfiguracion = (config) => {
+    const normalized = normalizeConfig(config);
     setConfiguracionActual({
-      ...config,
-      // Limpiar previsualizaciones para mostrar las imágenes guardadas
-      logoIzquierdoPreview: null,
-      logoDerechoPreview: null,
+      ...normalized,
       fondoCertificadoPreview: null
     });
     setSelectedElement(null);
@@ -361,7 +896,7 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
     try {
         setLoading(true);
         const token = localStorage.getItem('token');
-      const response = await fetch(`/admin/certificados/disenos/${id}/activar`, {
+      const response = await fetch(`${API_BASE}/admin/certificados/disenos/${id}/activar`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -370,20 +905,20 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
 
       if (response.ok) {
         alert('Configuración activada exitosamente');
-        
-        // Cargar la configuración activada en el editor
-        const configToActivate = configuraciones.find(config => config.id === id);
-        if (configToActivate) {
+        // Cargar desde backend la configuración activada para evitar desfasajes
+        const detailResp = await fetch(`${API_BASE}/admin/certificados/disenos/${id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (detailResp.ok) {
+          const detailData = await detailResp.json();
+          const normalized = normalizeConfig(detailData);
           setConfiguracionActual({
-            ...configToActivate,
-            // Limpiar previsualizaciones para mostrar las imágenes guardadas
-            logoIzquierdoPreview: null,
-            logoDerechoPreview: null,
+            ...normalized,
             fondoCertificadoPreview: null
           });
           setSelectedElement(null);
         }
-        
+
         cargarConfiguraciones();
         cargarConfiguracionPorDefecto();
       } else {
@@ -405,7 +940,7 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
     try {
         setLoading(true);
         const token = localStorage.getItem('token');
-      const response = await fetch(`/admin/certificados/disenos/${id}`, {
+      const response = await fetch(`${API_BASE}/admin/certificados/disenos/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -440,7 +975,7 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
         try {
           const img = new Image();
           img.crossOrigin = 'anonymous';
-          img.src = configuracionActual.fondoCertificado;
+          img.src = resolveAssetUrl(configuracionActual.fondoCertificado);
           await new Promise((resolve, reject) => {
             img.onload = resolve;
             img.onerror = reject;
@@ -451,38 +986,7 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
         }
       }
 
-      // Logos
-      if (configuracionActual.logoIzquierdo) {
-        try {
-          const logoIzq = new Image();
-          logoIzq.crossOrigin = 'anonymous';
-          logoIzq.src = configuracionActual.logoIzquierdo;
-          await new Promise((resolve, reject) => {
-            logoIzq.onload = resolve;
-            logoIzq.onerror = reject;
-          });
-          const config = configuracionActual.configuracion.logoIzquierdo;
-          pdf.addImage(logoIzq, 'PNG', config.x, config.y, config.width, config.height);
-        } catch (error) {
-          console.warn('No se pudo cargar el logo izquierdo:', error);
-        }
-      }
-
-      if (configuracionActual.logoDerecho) {
-        try {
-          const logoDer = new Image();
-          logoDer.crossOrigin = 'anonymous';
-          logoDer.src = configuracionActual.logoDerecho;
-          await new Promise((resolve, reject) => {
-            logoDer.onload = resolve;
-            logoDer.onerror = reject;
-          });
-          const config = configuracionActual.configuracion.logoDerecho;
-          pdf.addImage(logoDer, 'PNG', config.x, config.y, config.width, config.height);
-        } catch (error) {
-          console.warn('No se pudo cargar el logo derecho:', error);
-        }
-      }
+      // Logos eliminados
 
       // Textos
       // Usar datosActuales si están disponibles, sino usar certificadoEjemplo
@@ -500,9 +1004,9 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
 
       elementos.forEach(elemento => {
         const config = configuracionActual.configuracion[elemento.key];
+        if (config?.visible === false) return; // ocultar solo si está explícitamente desactivado
         pdf.setFontSize(config.fontSize);
         pdf.setTextColor(config.color);
-        
         if (elemento.key === 'descripcion') {
           const lines = pdf.splitTextToSize(elemento.text, 400);
           pdf.text(lines, config.x, config.y, { align: 'center' });
@@ -521,11 +1025,13 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
       pdf.line(firmaDer.x, firmaDer.y + firmaDer.height - 20, firmaDer.x + firmaDer.width, firmaDer.y + firmaDer.height - 20);
       pdf.text('Coordinador', firmaDer.x + firmaDer.width / 2, firmaDer.y + firmaDer.height - 5, { align: 'center' });
 
-      // QR placeholder
+      // QR placeholder (solo si visible)
       const qrConfig = configuracionActual.configuracion.qr;
-      pdf.rect(qrConfig.x, qrConfig.y, qrConfig.width, qrConfig.height);
-      pdf.setFontSize(8);
-      pdf.text('QR Code', qrConfig.x + qrConfig.width / 2, qrConfig.y + qrConfig.height / 2, { align: 'center' });
+      if (qrConfig?.visible) {
+        pdf.rect(qrConfig.x, qrConfig.y, qrConfig.width, qrConfig.height);
+        pdf.setFontSize(8);
+        pdf.text('QR Code', qrConfig.x + qrConfig.width / 2, qrConfig.y + qrConfig.height / 2, { align: 'center' });
+      }
 
       pdf.save(`certificado-preview-${Date.now()}.pdf`);
     } catch (error) {
@@ -560,11 +1066,12 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
 
     try {
       setLoading(true);
-      
-      // Generar código único para el certificado
-      const codigoVerificacion = `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-      
-      const certificadoData = {
+
+      // Determinar código de verificación: si ya existe, conservarlo; si no, generar nuevo
+      const codigoExistente = datosEstudiante.codigo_verificacion;
+      const codigoVerificacion = codigoExistente || `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+      const payloadBase = {
         datosEstudiante: {
           dni: datosEstudiante.dni,
           nombreCompleto: datosEstudiante.nombre_completo,
@@ -577,42 +1084,56 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
           observaciones: datosEstudiante.observaciones
         },
         disenoId: configuracionActual.id,
-        codigoVerificacion: codigoVerificacion
+        codigoVerificacion
       };
 
       const token = localStorage.getItem('token');
-      const response = await fetch('/admin/certificados/guardar-con-diseno', {
+
+      // Intentar crear nuevo certificado
+      let response = await fetch(`${API_BASE}/admin/certificados/guardar-con-diseno`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(certificadoData)
+        body: JSON.stringify(payloadBase)
       });
 
-      const result = await response.json();
+      let result = await response.json().catch(() => ({}));
+
+      // Si ya existe, realizar actualización en lugar de crear
+      if (!response.ok && (result?.message?.includes('Ya existe un certificado activo') || response.status === 400)) {
+        response = await fetch(`${API_BASE}/admin/certificados/actualizar-con-diseno`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payloadBase)
+        });
+        result = await response.json();
+      }
 
       if (response.ok && result.success) {
-        // Descargar automáticamente el PDF
-        await handleDownloadPDF(result.certificado.codigo_verificacion);
-        
-        alert(`Certificado guardado y descargado exitosamente. Código: ${result.certificado.codigo_verificacion}`);
-        
-        // Llamar callback si existe
+        // Descargar automáticamente el PDF (usa el código existente si hay)
+        const codigoFinal = result.certificado?.codigo_verificacion || codigoVerificacion;
+        await handleDownloadPDF(codigoFinal);
+
+        alert(`${codigoExistente ? 'Certificado actualizado' : 'Certificado guardado'} y descargado exitosamente. Código: ${codigoFinal}`);
+
         if (onCertificadoGuardado) {
           onCertificadoGuardado(result.certificado);
         }
-        
-        // Cerrar modal
+
         if (onClose) {
           onClose();
         }
       } else {
-        alert(result.message || 'Error al guardar el certificado');
+        alert(result?.message || 'Error al guardar/actualizar el certificado');
       }
     } catch (error) {
-      console.error('Error al guardar certificado:', error);
-      alert('Error al guardar el certificado');
+      console.error('Error al guardar/actualizar certificado:', error);
+      alert('Error al guardar/actualizar el certificado');
     } finally {
       setLoading(false);
     }
@@ -621,7 +1142,7 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
   // Función para descargar PDF automáticamente
   const handleDownloadPDF = async (codigoVerificacion) => {
     try {
-      const response = await fetch(`/admin/certificados/pdf/${codigoVerificacion}`);
+      const response = await fetch(`${API_BASE}/admin/certificados/pdf/${codigoVerificacion}`);
       
       if (response.ok) {
         const blob = await response.blob();
@@ -641,10 +1162,7 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
     >
       <motion.div
@@ -671,8 +1189,58 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
           {/* Panel izquierdo */}
           <div className="w-1/3 p-6 border-r overflow-y-auto">
             <div className="space-y-6">
-              {/* Información del Estudiante */}
-              {datosEstudiante && (
+              {/* Modo de edición */}
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                <label className="flex items-center gap-2 text-sm text-indigo-800">
+                  <input type="checkbox" checked={editTextsOnly} onChange={(e)=>setEditTextsOnly(e.target.checked)} />
+                  Editar solo textos
+                </label>
+                {editTextsOnly && (
+                  <p className="text-xs text-indigo-700 mt-2">Con este modo activo, los logos, firmas y el QR están bloqueados. Solo puedes arrastrar y ajustar textos (X/Y, tamaño, fuente, color).</p>
+                )}
+              </div>
+
+              {/* Campos de texto: seleccionar y mostrar/ocultar */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">Campos de texto</h3>
+                <div className="space-y-2">
+                  {Object.entries(TEXT_KEYS).map(([key, label]) => (
+                    <div key={key} className="flex items-center justify-between gap-2">
+                      <label className="flex items-center gap-2 text-xs text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={visibleTextElements[key]}
+                          onChange={(e)=>{
+                            const checked = e.target.checked;
+                            setVisibleTextElements(prev=>({ ...prev, [key]: checked }));
+                            setConfiguracionActual(prev => ({
+                              ...prev,
+                              configuracion: {
+                                ...prev.configuracion,
+                                [key]: {
+                                  ...prev.configuracion[key],
+                                  visible: checked
+                                }
+                              }
+                            }));
+                          }}
+                        />
+                        {label}
+                      </label>
+                      <button
+                        className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                        onClick={()=>setSelectedElement(key)}
+                        disabled={!visibleTextElements[key]}
+                      >
+                        Editar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Si tu plantilla ya tiene un texto impreso (por ejemplo “CERTIFICADO”), desactívalo aquí para evitar duplicarlo.</p>
+              </div>
+              {/* Información del Estudiante: ocultar en edición de textos o si hay PDF */}
+              {datosEstudiante && !editTextsOnly && !pdfUrl && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <h3 className="text-lg font-semibold text-green-800 flex items-center gap-2 mb-3">
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -716,100 +1284,70 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
                 />
               </div>
 
-              {/* Sección de imágenes */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <ImageIcon size={20} />
-                  Imágenes
-                </h3>
-                
-                {/* Logo izquierdo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Logo izquierdo
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/gif"
-                    onChange={(e) => handleFileUpload(e.target.files[0], 'logoIzquierdo')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  {(configuracionActual.logoIzquierdoPreview || configuracionActual.logoIzquierdo) && (
-                    <div className="mt-2 relative">
-                      <img 
-                        src={configuracionActual.logoIzquierdoPreview || configuracionActual.logoIzquierdo} 
-                        alt="Logo izquierdo" 
-                        className="w-16 h-16 object-contain border rounded shadow-sm"
-                      />
-                      {configuracionActual.logoIzquierdoPreview && (
-                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded-full">
-                          Nuevo
-                        </div>
-                      )}
-                    </div>
-                  )}
+              {/* Sección de imágenes: solo fondo del certificado (logos eliminados) */}
+              {!onlyPDF && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <ImageIcon size={20} />
+                    Imágenes
+                  </h3>
+                  {/* Fondo del certificado */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fondo del certificado
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/gif"
+                      onChange={(e) => handleFileUpload(e.target.files[0], 'fondoCertificado')}
+                      disabled={editTextsOnly}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${editTextsOnly ? 'border-gray-200 bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                    />
+                    {(configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado) && (
+                      <div className="mt-2 relative">
+                        <img 
+                          src={resolveAssetUrl(configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado)} 
+                          alt="Fondo" 
+                          className="w-full h-20 object-cover border rounded shadow-sm"
+                        />
+                        {configuracionActual.fondoCertificadoPreview && (
+                          <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded-full">
+                            Nuevo
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Formatos soportados: JPG, PNG, GIF (máx. 5MB)
+                    </p>
+                  </div>
                 </div>
+              )}
 
-                {/* Logo derecho */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Logo derecho
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/gif"
-                    onChange={(e) => handleFileUpload(e.target.files[0], 'logoDerecho')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  {(configuracionActual.logoDerechoPreview || configuracionActual.logoDerecho) && (
-                    <div className="mt-2 relative">
-                      <img 
-                        src={configuracionActual.logoDerechoPreview || configuracionActual.logoDerecho} 
-                        alt="Logo derecho" 
-                        className="w-16 h-16 object-contain border rounded shadow-sm"
-                      />
-                      {configuracionActual.logoDerechoPreview && (
-                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded-full">
-                          Nuevo
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Fondo del certificado */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fondo del certificado
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/gif"
-                    onChange={(e) => handleFileUpload(e.target.files[0], 'fondoCertificado')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  {(configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado) && (
-                    <div className="mt-2 relative">
-                      <img 
-                        src={configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado} 
-                        alt="Fondo" 
-                        className="w-full h-20 object-cover border rounded shadow-sm"
-                      />
-                      {configuracionActual.fondoCertificadoPreview && (
-                        <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1 rounded-full">
-                          Nuevo
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Formatos soportados: JPG, PNG, GIF (máx. 5MB)
-                  </p>
-                </div>
-              </div>
-
-              {/* Botones de acción */}
+              {/* Botones de acción y guardado: ocultar en vista simple */}
+              {(!simpleLeftView) && (
               <div className="space-y-3">
+                {/* Guardar/Actualizar configuración del diseño */}
+                <button
+                  onClick={handleSaveConfiguration}
+                  disabled={loading || !configuracionActual}
+                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Save size={18} />
+                  {loading ? 'Guardando...' : (configuracionActual.id ? 'Actualizar configuración' : 'Guardar configuración')}
+                </button>
+                {/* Herramientas rápidas de posicionamiento asistido */}
+                {assistedMode && (
+                  <div className="p-2 bg-purple-50 border border-purple-200 rounded mb-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <button className="px-2 py-1 text-xs bg-purple-600 text-white rounded" onClick={()=>setAssistedMode(false)}>Salir de posicionamiento</button>
+                      <button className="px-2 py-1 text-xs bg-blue-600 text-white rounded" onClick={()=>{ if(selectedElement){ const y = configuracionActual.configuracion[selectedElement]?.y || 0; setBaselineGuides(prev=>[...prev, y]); } }}>Agregar guía desde selección</button>
+                      <button className="px-2 py-1 text-xs bg-gray-600 text-white rounded" onClick={()=>setBaselineGuides([])}>Borrar guías</button>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs mb-1"><input type="checkbox" checked={snapToGuides} onChange={(e)=>setSnapToGuides(e.target.checked)} /> Ajuste a guías horizontales</label>
+                    <p className="text-[11px] text-gray-600">Usa las flechas del teclado para mover; Shift = 10px.</p>
+                  </div>
+                )}
                 {/* Solo mostrar el botón Guardar si hay datos del estudiante */}
                 {datosEstudiante ? (
                   <button
@@ -826,6 +1364,7 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
                   </div>
                 )}
               </div>
+              )}
 
               {/* Panel de propiedades del elemento seleccionado */}
               {selectedElement && (
@@ -845,6 +1384,14 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
                           onChange={(e) => updateElementProperty(selectedElement, 'x', parseInt(e.target.value))}
                           className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                         />
+                        <input
+                          type="range"
+                          min="0"
+                          max="800"
+                          value={Math.round(configuracionActual.configuracion[selectedElement]?.x || 0)}
+                          onChange={(e) => updateElementProperty(selectedElement, 'x', parseInt(e.target.value))}
+                          className="w-full mt-1"
+                        />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Y</label>
@@ -854,11 +1401,19 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
                           onChange={(e) => updateElementProperty(selectedElement, 'y', parseInt(e.target.value))}
                           className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                         />
+                        <input
+                          type="range"
+                          min="0"
+                          max="600"
+                          value={Math.round(configuracionActual.configuracion[selectedElement]?.y || 0)}
+                          onChange={(e) => updateElementProperty(selectedElement, 'y', parseInt(e.target.value))}
+                          className="w-full mt-1"
+                        />
                       </div>
                     </div>
                     
                     {/* Propiedades de texto */}
-                    {!['logoIzquierdo', 'logoDerecho', 'firmaIzquierda', 'firmaDerecha', 'qr'].includes(selectedElement) && (
+                    {!['firmaIzquierda', 'firmaDerecha', 'qr'].includes(selectedElement) && (
                       <>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">Tamaño de fuente</label>
@@ -929,32 +1484,29 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
                         </div>
                       </>
                     )}
-                    
-                    {/* Propiedades de imágenes */}
-                    {['logoIzquierdo', 'logoDerecho'].includes(selectedElement) && (
-                      <>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Ancho</label>
-                            <input
-                              type="number"
-                              value={configuracionActual.configuracion[selectedElement]?.width || 100}
-                              onChange={(e) => updateElementProperty(selectedElement, 'width', parseInt(e.target.value))}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Alto</label>
-                            <input
-                              type="number"
-                              value={configuracionActual.configuracion[selectedElement]?.height || 100}
-                              onChange={(e) => updateElementProperty(selectedElement, 'height', parseInt(e.target.value))}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                            />
-                          </div>
-                        </div>
-                      </>
-                    )}
+
+                    {/* Propiedades de imágenes eliminadas: logos deprecados */}
+
+                    {/* Herramientas de edición */}
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                      <label className="flex items-center gap-2 text-xs">
+                        <input type="checkbox" checked={showRulers} onChange={(e)=>setShowRulers(e.target.checked)} />
+                        Mostrar reglas X/Y
+                      </label>
+                      <label className="flex items-center gap-2 text-xs">
+                        <input type="checkbox" checked={snapToGrid} onChange={(e)=>setSnapToGrid(e.target.checked)} />
+                        Ajuste a cuadrícula
+                      </label>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Tamaño de cuadrícula</label>
+                        <input type="number" min="5" max="100" step="1" value={gridSize} onChange={(e)=>setGridSize(parseInt(e.target.value)||10)} className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Zoom</label>
+                        <input type="range" min="0.5" max="1.5" step="0.05" value={zoom} onChange={(e)=>setZoom(parseFloat(e.target.value))} className="w-full" />
+                        <div className="text-xs text-gray-500 text-center mt-1">{Math.round(zoom*100)}%</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1003,421 +1555,12 @@ const DisenoCertificados = ({ onClose, datosEstudiante, onCertificadoGuardado })
           {/* Área de diseño */}
           <div className="flex-1 p-6">
             <div className="h-full">
-              {previsualizacion ? (
-                <div className="flex flex-col items-center h-full">
-                  <div className="mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800 text-center">Vista Previa del Certificado</h2>
-                    <p className="text-gray-600 text-center">Así se verá el certificado final</p>
-                  </div>
-                  <div 
-                    className="relative bg-white border-2 border-gray-300 shadow-lg overflow-hidden"
-                    style={{ width: '800px', height: '600px', transform: 'scale(0.8)', transformOrigin: 'top center' }}
-                  >
-                    {/* Fondo */}
-                    {configuracionActual.fondoCertificado && (
-                      <img
-                        src={configuracionActual.fondoCertificado}
-                        alt="Fondo"
-                        className="absolute inset-0 w-full h-full object-cover"
-                        style={{ zIndex: 0 }}
-                      />
-                    )}
-
-                    {/* Logos */}
-                    {configuracionActual.logoIzquierdo && (
-                      <img
-                        src={configuracionActual.logoIzquierdo}
-                        alt="Logo izquierdo"
-                        className="absolute"
-                        style={{
-                          left: configuracionActual.configuracion.logoIzquierdo.x,
-                          top: configuracionActual.configuracion.logoIzquierdo.y,
-                          width: configuracionActual.configuracion.logoIzquierdo.width,
-                          height: configuracionActual.configuracion.logoIzquierdo.height,
-                          zIndex: 1
-                        }}
-                      />
-                    )}
-
-                    {configuracionActual.logoDerecho && (
-                      <img
-                        src={configuracionActual.logoDerecho}
-                        alt="Logo derecho"
-                        className="absolute"
-                        style={{
-                          left: configuracionActual.configuracion.logoDerecho.x,
-                          top: configuracionActual.configuracion.logoDerecho.y,
-                          width: configuracionActual.configuracion.logoDerecho.width,
-                          height: configuracionActual.configuracion.logoDerecho.height,
-                          zIndex: 1
-                        }}
-                      />
-                    )}
-
-                    {/* Textos */}
-                    <div
-                      className="absolute text-center"
-                      style={{
-                        left: configuracionActual.configuracion.nombreInstituto.x,
-                        top: configuracionActual.configuracion.nombreInstituto.y,
-                        fontSize: configuracionActual.configuracion.nombreInstituto.fontSize,
-                        color: configuracionActual.configuracion.nombreInstituto.color,
-                        fontFamily: configuracionActual.configuracion.nombreInstituto.fontFamily,
-                        fontWeight: configuracionActual.configuracion.nombreInstituto.fontWeight,
-                        fontStyle: configuracionActual.configuracion.nombreInstituto.fontStyle,
-                        transform: 'translateX(-50%)',
-                        zIndex: 1
-                      }}
-                    >
-                      INSTITUTO DE INFORMÁTICA UNA-PUNO
-                    </div>
-
-                    <div
-                      className="absolute text-center"
-                      style={{
-                        left: configuracionActual.configuracion.titulo.x,
-                        top: configuracionActual.configuracion.titulo.y,
-                        fontSize: configuracionActual.configuracion.titulo.fontSize,
-                        color: configuracionActual.configuracion.titulo.color,
-                        fontFamily: configuracionActual.configuracion.titulo.fontFamily,
-                        fontWeight: configuracionActual.configuracion.titulo.fontWeight,
-                        fontStyle: configuracionActual.configuracion.titulo.fontStyle,
-                        transform: 'translateX(-50%)',
-                        zIndex: 1
-                      }}
-                    >
-                      CERTIFICADO
-                    </div>
-
-                    <div
-                      className="absolute text-center"
-                      style={{
-                        left: configuracionActual.configuracion.otorgado.x,
-                        top: configuracionActual.configuracion.otorgado.y,
-                        fontSize: configuracionActual.configuracion.otorgado.fontSize,
-                        color: configuracionActual.configuracion.otorgado.color,
-                        fontFamily: configuracionActual.configuracion.otorgado.fontFamily,
-                        fontWeight: configuracionActual.configuracion.otorgado.fontWeight,
-                        fontStyle: configuracionActual.configuracion.otorgado.fontStyle,
-                        transform: 'translateX(-50%)',
-                        zIndex: 1
-                      }}
-                    >
-                      Otorgado a:
-                    </div>
-
-                    <div
-                      className="absolute text-center"
-                      style={{
-                        left: configuracionActual.configuracion.nombreEstudiante.x,
-                        top: configuracionActual.configuracion.nombreEstudiante.y,
-                        fontSize: configuracionActual.configuracion.nombreEstudiante.fontSize,
-                        color: configuracionActual.configuracion.nombreEstudiante.color,
-                        fontFamily: configuracionActual.configuracion.nombreEstudiante.fontFamily,
-                        fontWeight: configuracionActual.configuracion.nombreEstudiante.fontWeight,
-                        fontStyle: configuracionActual.configuracion.nombreEstudiante.fontStyle,
-                        transform: 'translateX(-50%)',
-                        zIndex: 1
-                      }}
-                    >
-                      {(datosActuales || certificadoEjemplo)?.nombre_completo || '[NOMBRE DEL ESTUDIANTE]'}
-                    </div>
-
-                    <div
-                      className="absolute text-center max-w-lg"
-                      style={{
-                        left: configuracionActual.configuracion.descripcion.x,
-                        top: configuracionActual.configuracion.descripcion.y,
-                        fontSize: configuracionActual.configuracion.descripcion.fontSize,
-                        color: configuracionActual.configuracion.descripcion.color,
-                        fontFamily: configuracionActual.configuracion.descripcion.fontFamily,
-                        fontWeight: configuracionActual.configuracion.descripcion.fontWeight,
-                        fontStyle: configuracionActual.configuracion.descripcion.fontStyle,
-                        transform: 'translateX(-50%)',
-                        zIndex: 1
-                      }}
-                    >
-                      {(datosActuales || certificadoEjemplo) ? `Por haber participado en "${(datosActuales || certificadoEjemplo).nombre_evento}" realizado del ${(datosActuales || certificadoEjemplo).fecha_inicio ? new Date((datosActuales || certificadoEjemplo).fecha_inicio).toLocaleDateString('es-ES') : '[FECHA INICIO]'} al ${(datosActuales || certificadoEjemplo).fecha_fin ? new Date((datosActuales || certificadoEjemplo).fecha_fin).toLocaleDateString('es-ES') : '[FECHA FIN]'}.` : 'Por haber participado como Asistente en la capacitación de "Desarrollo de Aplicaciones Web con React y Node.js" realizada del 01 al 15 de Diciembre del 2024.'}
-                    </div>
-
-                    <div
-                      className="absolute text-center"
-                      style={{
-                        left: configuracionActual.configuracion.fecha.x,
-                        top: configuracionActual.configuracion.fecha.y,
-                        fontSize: configuracionActual.configuracion.fecha.fontSize,
-                        color: configuracionActual.configuracion.fecha.color,
-                        fontFamily: configuracionActual.configuracion.fecha.fontFamily,
-                        fontWeight: configuracionActual.configuracion.fecha.fontWeight,
-                        fontStyle: configuracionActual.configuracion.fecha.fontStyle,
-                        transform: 'translateX(-50%)',
-                        zIndex: 1
-                      }}
-                    >
-                      {(datosActuales || certificadoEjemplo)?.fecha_emision ? new Date((datosActuales || certificadoEjemplo).fecha_emision).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </div>
-
-                    <div
-                      className="absolute text-center"
-                      style={{
-                        left: configuracionActual.configuracion.codigo.x,
-                        top: configuracionActual.configuracion.codigo.y,
-                        fontSize: configuracionActual.configuracion.codigo.fontSize,
-                        color: configuracionActual.configuracion.codigo.color,
-                        fontFamily: configuracionActual.configuracion.codigo.fontFamily,
-                        fontWeight: configuracionActual.configuracion.codigo.fontWeight,
-                        fontStyle: configuracionActual.configuracion.codigo.fontStyle,
-                        transform: 'translateX(-50%)',
-                        zIndex: 1
-                      }}
-                    >
-                      Código: {certificadoEjemplo?.codigo_verificacion || 'CERT-2024-001'}
-                    </div>
-
-                    {/* Firmas */}
-                    <div
-                      className="absolute flex flex-col items-center justify-end"
-                      style={{
-                        left: configuracionActual.configuracion.firmaIzquierda.x,
-                        top: configuracionActual.configuracion.firmaIzquierda.y,
-                        width: configuracionActual.configuracion.firmaIzquierda.width,
-                        height: configuracionActual.configuracion.firmaIzquierda.height,
-                        zIndex: 1
-                      }}
-                    >
-                      <div className="border-t-2 border-gray-800 w-full mb-1"></div>
-                      <div className="text-xs text-center font-medium">Director</div>
-                    </div>
-
-                    <div
-                      className="absolute flex flex-col items-center justify-end"
-                      style={{
-                        left: configuracionActual.configuracion.firmaDerecha.x,
-                        top: configuracionActual.configuracion.firmaDerecha.y,
-                        width: configuracionActual.configuracion.firmaDerecha.width,
-                        height: configuracionActual.configuracion.firmaDerecha.height,
-                        zIndex: 1
-                      }}
-                    >
-                      <div className="border-t-2 border-gray-800 w-full mb-1"></div>
-                      <div className="text-xs text-center font-medium">Coordinador</div>
-                    </div>
-
-                    {/* QR Code */}
-                    <div
-                      className="absolute flex items-center justify-center bg-gray-100 border"
-                      style={{
-                        left: configuracionActual.configuracion.qr.x,
-                        top: configuracionActual.configuracion.qr.y,
-                        width: configuracionActual.configuracion.qr.width,
-                        height: configuracionActual.configuracion.qr.height,
-                        zIndex: 1
-                      }}
-                    >
-                      <div className="text-xs text-gray-600 text-center">
-                        QR<br/>Code
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="h-full border-2 border-dashed border-gray-300 rounded-lg relative bg-gray-50 overflow-hidden"
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                >
-                  {/* Fondo */}
-                  {(configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado) && (
-                    <img
-                      src={configuracionActual.fondoCertificadoPreview || configuracionActual.fondoCertificado}
-                      alt="Fondo"
-                      className="absolute inset-0 w-full h-full object-cover opacity-30"
-                      style={{ zIndex: 0 }}
-                    />
-                  )}
-                  
-                  <div className="absolute inset-4">
-                    <div className="bg-white bg-opacity-90 rounded-lg p-3 mb-4 shadow-sm">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-1">Editor Visual</h3>
-                      <p className="text-sm text-gray-500">Arrastra los elementos para posicionarlos en el certificado</p>
-                    </div>
-                  </div>
-
-                  {/* Grid de fondo */}
-                  <div className="absolute inset-0 pointer-events-none opacity-10">
-                    <svg className="w-full h-full">
-                      <defs>
-                        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                          <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#000" strokeWidth="1"/>
-                        </pattern>
-                      </defs>
-                      <rect width="100%" height="100%" fill="url(#grid)" />
-                    </svg>
-                  </div>
-
-                  {/* Elementos arrastrables */}
-                  <div className="relative">
-                    {/* Logos */}
-                    {(configuracionActual.logoIzquierdoPreview || configuracionActual.logoIzquierdo) && (
-                      <div
-                        className={`absolute border-2 transition-all cursor-move ${
-                          selectedElement === 'logoIzquierdo' ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:border-gray-300'
-                        }`}
-                        style={{
-                          left: configuracionActual.configuracion.logoIzquierdo.x,
-                          top: configuracionActual.configuracion.logoIzquierdo.y,
-                          width: configuracionActual.configuracion.logoIzquierdo.width,
-                          height: configuracionActual.configuracion.logoIzquierdo.height
-                        }}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, 'logoIzquierdo')}
-                        onClick={() => handleElementClick('logoIzquierdo')}
-                      >
-                        <img
-                          src={configuracionActual.logoIzquierdoPreview || configuracionActual.logoIzquierdo}
-                          alt="Logo izquierdo"
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                    )}
-
-                    {(configuracionActual.logoDerechoPreview || configuracionActual.logoDerecho) && (
-                      <div
-                        className={`absolute border-2 transition-all cursor-move ${
-                          selectedElement === 'logoDerecho' ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:border-gray-300'
-                        }`}
-                        style={{
-                          left: configuracionActual.configuracion.logoDerecho.x,
-                          top: configuracionActual.configuracion.logoDerecho.y,
-                          width: configuracionActual.configuracion.logoDerecho.width,
-                          height: configuracionActual.configuracion.logoDerecho.height
-                        }}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, 'logoDerecho')}
-                        onClick={() => handleElementClick('logoDerecho')}
-                      >
-                        <img
-                          src={configuracionActual.logoDerechoPreview || configuracionActual.logoDerecho}
-                          alt="Logo derecho"
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                    )}
-
-                    {/* Textos */}
-                    {Object.entries({
-                      nombreInstituto: 'INSTITUTO DE INFORMÁTICA UNA-PUNO',
-                      titulo: 'CERTIFICADO',
-                      otorgado: 'Otorgado a:',
-                      nombreEstudiante: '[NOMBRE DEL ESTUDIANTE]',
-                      descripcion: 'Por haber participado como Asistente en la capacitación...',
-                      fecha: 'Puno, 15 de Diciembre del 2024',
-                      codigo: 'Código: CERT-2024-001'
-                    }).map(([key, text]) => (
-                      <div
-                        key={key}
-                        className={`absolute text-center cursor-move border-2 transition-all px-2 py-1 ${
-                          selectedElement === key ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:border-gray-300'
-                        }`}
-                        style={{
-                          left: configuracionActual.configuracion[key].x,
-                          top: configuracionActual.configuracion[key].y,
-                          fontSize: configuracionActual.configuracion[key].fontSize,
-                          color: configuracionActual.configuracion[key].color,
-                          fontFamily: configuracionActual.configuracion[key].fontFamily,
-                          fontWeight: configuracionActual.configuracion[key].fontWeight,
-                          fontStyle: configuracionActual.configuracion[key].fontStyle,
-                          transform: 'translateX(-50%)'
-                        }}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, key)}
-                        onClick={() => handleElementClick(key)}
-                      >
-                        {text}
-                      </div>
-                    ))}
-
-                    {/* Firmas */}
-                    <div
-                      className={`absolute flex flex-col items-center justify-end cursor-move border-2 transition-all ${
-                        selectedElement === 'firmaIzquierda' ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:border-gray-300'
-                      }`}
-                      style={{
-                        left: configuracionActual.configuracion.firmaIzquierda.x,
-                        top: configuracionActual.configuracion.firmaIzquierda.y,
-                        width: configuracionActual.configuracion.firmaIzquierda.width,
-                        height: configuracionActual.configuracion.firmaIzquierda.height
-                      }}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, 'firmaIzquierda')}
-                      onClick={() => handleElementClick('firmaIzquierda')}
-                    >
-                      <div className="border-t-2 border-gray-800 w-full mb-1"></div>
-                      <div className="text-xs text-center font-medium">Director</div>
-                    </div>
-
-                    <div
-                      className={`absolute flex flex-col items-center justify-end cursor-move border-2 transition-all ${
-                        selectedElement === 'firmaDerecha' ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:border-gray-300'
-                      }`}
-                      style={{
-                        left: configuracionActual.configuracion.firmaDerecha.x,
-                        top: configuracionActual.configuracion.firmaDerecha.y,
-                        width: configuracionActual.configuracion.firmaDerecha.width,
-                        height: configuracionActual.configuracion.firmaDerecha.height
-                      }}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, 'firmaDerecha')}
-                      onClick={() => handleElementClick('firmaDerecha')}
-                    >
-                      <div className="border-t-2 border-gray-800 w-full mb-1"></div>
-                      <div className="text-xs text-center font-medium">Coordinador</div>
-                    </div>
-
-                    {/* QR Code */}
-                    <div
-                      className={`absolute flex items-center justify-center bg-gray-100 border cursor-move border-2 transition-all ${
-                        selectedElement === 'qr' ? 'border-blue-500 bg-blue-50' : 'border-transparent hover:border-gray-300'
-                      }`}
-                      style={{
-                        left: configuracionActual.configuracion.qr.x,
-                        top: configuracionActual.configuracion.qr.y,
-                        width: configuracionActual.configuracion.qr.width,
-                        height: configuracionActual.configuracion.qr.height
-                      }}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, 'qr')}
-                      onClick={() => handleElementClick('qr')}
-                    >
-                      <div className="text-xs text-gray-600 text-center">
-                        QR<br/>Code
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Indicadores de ayuda */}
-                  <div className="absolute bottom-4 left-4 bg-white bg-opacity-95 rounded-lg p-3 text-xs text-gray-600 shadow-lg">
-                    <div className="font-medium text-gray-800 mb-2">Controles:</div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      <span>Arrastra para mover</span>
-                    </div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
-                      <span>Click para seleccionar y editar</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      <span>Vista Previa para ver resultado</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {renderArea()}
             </div>
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 };
 

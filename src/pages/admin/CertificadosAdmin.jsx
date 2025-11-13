@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Award, Eye, Download, Trash2, Edit } from 'lucide-react';
+import { FileText, Award, Eye, Download, Trash2, Edit, SortAsc, SortDesc } from 'lucide-react';
 import PDFPreviewModal from '../../components/PDFPreviewModal';
+import DisenoCertificados from '../../components/DisenoCertificados';
 import ExcelImporter from '../../components/admin/ExcelImporter';
-import api, { API_BASE } from '../../config/api';
+import SimpleDesignUploader from '../../components/admin/SimpleDesignUploader';
+import api, { API_BASE, API_HOST } from '../../config/api';
 import { ConfirmModal, useToast } from '../../components/ui';
 
 const CertificadosAdmin = () => {
@@ -11,32 +13,40 @@ const CertificadosAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [showPDFModal, setShowPDFModal] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const [designEditorOpen, setDesignEditorOpen] = useState(false);
+  const [designEditorContext, setDesignEditorContext] = useState('global'); // 'global' | 'personal'
   const [errors, setErrors] = useState({});
   const [editCert, setEditCert] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [isCreate, setIsCreate] = useState(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteAction, setDeleteAction] = useState(null);
   const [confirmMessage, setConfirmMessage] = useState('');
-  const { showToast } = useToast();
+  const [sortOrder, setSortOrder] = useState('desc');
+  const toast = useToast();
+
+  // Diseños de certificados
+  const [disenos, setDisenos] = useState([]);
+  const [defaultDesignId, setDefaultDesignId] = useState(null);
+  const [settingDefault, setSettingDefault] = useState(false);
+  const [designUploaderOpen, setDesignUploaderOpen] = useState(false);
 
   useEffect(() => {
     fetchCertificados();
+    fetchDisenos();
   }, []);
 
   const fetchCertificados = async () => {
     try {
       setLoading(true);
       const response = await api.get('/admin/certificados');
-      // Asegurar que el último registro aparezca arriba (orden descendente)
-      const ordered = Array.isArray(response.data)
-        ? [...response.data].sort((a, b) => new Date(b.fecha_emision) - new Date(a.fecha_emision))
-        : [];
-      setCertificados(ordered);
+      const list = Array.isArray(response.data) ? response.data : [];
+      setCertificados(list);
       setPage(1);
     } catch (error) {
       console.error('Error al obtener certificados:', error);
@@ -45,29 +55,56 @@ const CertificadosAdmin = () => {
     }
   };
 
+  const fetchDisenos = async () => {
+    try {
+      const response = await api.get('/admin/certificados/disenos');
+      const list = Array.isArray(response.data) ? response.data : [];
+      setDisenos(list);
+      const activo = list.find(d => d.activa === 1 || d.activa === true);
+      if (activo) setDefaultDesignId(activo.id);
+    } catch (error) {
+      console.error('Error al obtener diseños:', error);
+    }
+  };
+
   // Búsqueda y paginación (client-side)
   useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
     setPage(1);
-  }, [search, pageSize]);
+  }, [debouncedSearch, pageSize]);
 
-  const filteredCerts = certificados.filter((c) => {
-    const term = search.trim().toLowerCase();
-    if (!term) return true;
-    return [
-      c.dni,
-      c.nombre_completo,
-      c.tipo_certificado,
-      c.nombre_evento,
-      c.codigo_verificacion
-    ]
-      .map((v) => (v || '').toString().toLowerCase())
-      .some((v) => v.includes(term));
-  });
+  const filteredCerts = useMemo(() => {
+    const term = debouncedSearch;
+    if (!term) return certificados;
+    return certificados.filter((c) => {
+      return [
+        c.dni,
+        c.nombre_completo,
+        c.tipo_certificado,
+        c.nombre_evento,
+        c.codigo_verificacion
+      ]
+        .map((v) => (v || '').toString().toLowerCase())
+        .some((v) => v.includes(term));
+    });
+  }, [certificados, debouncedSearch]);
 
-  const totalItems = filteredCerts.length;
+  const sortedCerts = useMemo(() => {
+    return [...filteredCerts].sort((a, b) => {
+      const da = new Date(a.fecha_emision || 0).getTime();
+      const db = new Date(b.fecha_emision || 0).getTime();
+      return sortOrder === 'asc' ? da - db : db - da;
+    });
+  }, [filteredCerts, sortOrder]);
+
+  const totalItems = sortedCerts.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const startIndex = (page - 1) * pageSize;
-  const visibleCerts = filteredCerts.slice(startIndex, startIndex + pageSize);
+  const visibleCerts = useMemo(() => sortedCerts.slice(startIndex, startIndex + pageSize), [sortedCerts, startIndex, pageSize]);
 
   const copyPublicUrl = async (codigo) => {
     try {
@@ -86,7 +123,21 @@ const CertificadosAdmin = () => {
       const url = `${API_BASE}/admin/certificados/pdf/${certificado.codigo_verificacion}?v=${timestamp}`;
       setSelectedCertificate({
         pdfUrl: url,
-        codigo: certificado.codigo_verificacion
+        codigo: certificado.codigo_verificacion,
+        estudiante: {
+          id: certificado.id,
+          dni: certificado.dni,
+          nombre_completo: certificado.nombre_completo,
+          tipo_certificado: certificado.tipo_certificado,
+          nombre_evento: certificado.nombre_evento,
+          descripcion_evento: certificado.descripcion_evento,
+          fecha_inicio: certificado.fecha_inicio,
+          fecha_fin: certificado.fecha_fin,
+          horas_academicas: certificado.horas_academicas,
+          fecha_emision: certificado.fecha_emision,
+          modalidad: certificado.modalidad || 'Presencial',
+          observaciones: certificado.observaciones || ''
+        }
       });
       setShowPDFModal(true);
     } catch (error) {
@@ -111,11 +162,11 @@ const CertificadosAdmin = () => {
       setDeleting(true);
       try {
         await api.delete(`/admin/certificados/${id}`);
-        showToast({ title: 'Eliminado', description: 'Certificado eliminado correctamente.' });
+        toast.addToast({ type: 'success', title: 'Eliminado', message: 'Certificado eliminado correctamente.' });
         fetchCertificados();
       } catch (error) {
         console.error('Error al eliminar certificado:', error);
-        showToast({ title: 'Error', description: 'No se pudo eliminar el certificado.' });
+        toast.addToast({ type: 'error', title: 'Error', message: 'No se pudo eliminar el certificado.' });
       } finally {
         setDeleting(false);
         setConfirmOpen(false);
@@ -178,6 +229,9 @@ const CertificadosAdmin = () => {
         horas_academicas: editCert.horas_academicas,
         fecha_emision: editCert.fecha_emision || null
       };
+      if (isCreate && defaultDesignId) {
+        payload.plantilla_certificado = `diseno_${defaultDesignId}.svg`;
+      }
       if (isCreate) {
         await api.post(`/admin/certificados`, payload);
       } else {
@@ -187,7 +241,8 @@ const CertificadosAdmin = () => {
       fetchCertificados();
     } catch (error) {
       console.error('Error al actualizar certificado:', error);
-      alert(error.response?.data?.error || 'No se pudo actualizar');
+      const msg = error.response?.data?.error || error.response?.data?.message || 'No se pudo actualizar';
+      toast.addToast({ type: 'error', title: 'Error al guardar', message: msg });
     }
   };
 
@@ -214,6 +269,16 @@ const CertificadosAdmin = () => {
             Certificados (Gestión)
           </h1>
           <p className="text-gray-600 text-xs">Gestión de registros y carga por Excel.</p>
+          <div className="mt-2 flex items-center gap-2">
+            <button onClick={() => setSortOrder('desc')} className={`px-3 py-1 rounded border text-xs flex items-center gap-1 ${sortOrder==='desc' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}>
+              <SortDesc className="w-4 h-4" />
+              Recientes primero
+            </button>
+            <button onClick={() => setSortOrder('asc')} className={`px-3 py-1 rounded border text-xs flex items-center gap-1 ${sortOrder==='asc' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'}`}>
+              <SortAsc className="w-4 h-4" />
+              Antiguos primero
+            </button>
+          </div>
         </div>
 
         {/* Sección: Importación por Excel */}
@@ -225,7 +290,75 @@ const CertificadosAdmin = () => {
                 Agregar registro
               </button>
             </div>
-            <ExcelImporter onAfterProcess={fetchCertificados} />
+            {/* Selector de plantilla por defecto */}
+            <div className="mb-2 p-2 bg-gray-50 rounded border border-gray-200">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-700">Plantilla por defecto:</span>
+                  <select
+                    className="border rounded px-2 py-1 text-sm"
+                    value={defaultDesignId || ''}
+                    onChange={(e) => setDefaultDesignId(Number(e.target.value) || null)}
+                  >
+                    <option value="">Selecciona plantilla</option>
+                    {disenos.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="px-2 py-1 bg-blue-600 text-white rounded text-xs"
+                    disabled={!defaultDesignId || settingDefault}
+                    onClick={async () => {
+                      if (!defaultDesignId) return;
+                      setSettingDefault(true);
+                      try {
+                        // Forzar uso del router admin (sin prefijo /api) para evitar conflictos
+                        await api.put(`${API_HOST}/admin/certificados/disenos/${defaultDesignId}/activar`);
+                        await fetchDisenos();
+                        toast.addToast({ type: 'success', title: 'Plantilla activada', message: 'Se aplicará por defecto al crear o importar.' });
+                      } catch (e) {
+                        console.error('Error al activar plantilla:', e);
+                        const msg = e.response?.data?.error || e.response?.data?.message || 'No se pudo activar la plantilla';
+                        toast.addToast({ type: 'error', title: 'Error', message: msg });
+                      } finally {
+                        setSettingDefault(false);
+                      }
+                    }}
+                  >
+                    {settingDefault ? 'Guardando...' : 'Establecer como predeterminada'}
+                  </button>
+                  <button
+                    className="px-2 py-1 bg-gray-700 text-white rounded text-xs"
+                    onClick={() => setDesignUploaderOpen(true)}
+                  >
+                    Seleccionar diseño
+                  </button>
+                  <button
+                    className="px-2 py-1 bg-purple-700 text-white rounded text-xs"
+                    onClick={() => setDesignEditorOpen(true)}
+                  >
+                    Editar diseño
+                  </button>
+                  {defaultDesignId && (
+                    <span className="text-xs text-gray-500">Actual: {disenos.find(d=>d.id===defaultDesignId)?.nombre || '—'}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <ExcelImporter 
+              onAfterProcess={fetchCertificados} 
+              defaultDesignName={disenos.find(d=>d.id===defaultDesignId)?.nombre}
+              defaultDesignId={defaultDesignId}
+            />
+            <SimpleDesignUploader
+              open={designUploaderOpen}
+              onClose={() => setDesignUploaderOpen(false)}
+              onSaved={() => { setDesignUploaderOpen(false); fetchDisenos(); }}
+            />
           </div>
         </div>
 
@@ -387,7 +520,34 @@ const CertificadosAdmin = () => {
           onClose={handleClosePDFModal}
           pdfUrl={selectedCertificate?.pdfUrl}
           certificateCode={selectedCertificate?.codigo}
+          onEdit={() => {
+            setShowPDFModal(false);
+            // Edición personal: abre el editor con contexto del estudiante
+            setDesignEditorContext('personal');
+            setDesignEditorOpen(true);
+          }}
         />
+
+        {/* Editor visual de diseño de certificados */}
+        {designEditorOpen && (
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-6xl h-[90vh] overflow-auto">
+              <div className="flex items-center justify-between p-3 border-b">
+                <h3 className="text-base font-semibold">Editor de diseño de certificados</h3>
+                <button className="px-2 py-1 text-xs bg-gray-700 text-white rounded" onClick={() => setDesignEditorOpen(false)}>Cerrar</button>
+              </div>
+              <div className="p-2">
+                <DisenoCertificados 
+                  onClose={() => { setDesignEditorOpen(false); setDesignEditorContext('global'); }} 
+                  onlyPDF={false}
+                  datosEstudiante={designEditorContext === 'personal' ? selectedCertificate?.estudiante : undefined}
+                  pdfUrl={designEditorContext === 'personal' ? selectedCertificate?.pdfUrl : undefined}
+                  initialSelectedElement={designEditorContext === 'personal' ? 'nombreEstudiante' : undefined}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal de edición simple */}
         {showEditModal && (

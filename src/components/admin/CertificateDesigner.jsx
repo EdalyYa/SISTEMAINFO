@@ -8,7 +8,7 @@ import {
   Move, 
   RotateCw,
   Square,
-  Image,
+  Image as IconImage,
   QrCode,
   Calendar,
   Hash,
@@ -41,6 +41,14 @@ const CertificateDesigner = ({ onSave, onClose, initialTemplate }) => {
         color: '#000000', 
         fontWeight: 'bold',
         visible: true 
+      },
+      rol: {
+        texto: 'Asistente',
+        x: 400, y: 310,
+        fontSize: 14,
+        color: '#000000',
+        fontWeight: 'bold',
+        visible: true,
       },
       descripcion: { 
         texto: 'Por haber participado en:', 
@@ -90,12 +98,13 @@ const CertificateDesigner = ({ onSave, onClose, initialTemplate }) => {
   const elementos = [
     { id: 'titulo', label: 'Título', icon: Type },
     { id: 'nombre', label: 'Nombre Participante', icon: User },
+    { id: 'rol', label: 'Rol', icon: Type },
     { id: 'descripcion', label: 'Descripción', icon: FileText },
     { id: 'evento', label: 'Nombre Evento', icon: Calendar },
     { id: 'fecha', label: 'Fecha', icon: Calendar },
     { id: 'codigo', label: 'Código', icon: Hash },
     { id: 'qr', label: 'Código QR', icon: QrCode },
-    { id: 'logo', label: 'Logo', icon: Image }
+    { id: 'logo', label: 'Logo', icon: IconImage }
   ];
 
   useEffect(() => {
@@ -110,9 +119,14 @@ const CertificateDesigner = ({ onSave, onClose, initialTemplate }) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Dibujar fondo
-    const img = new Image();
+    const img = new window.Image();
     img.onload = () => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      dibujarElementos(ctx);
+    };
+    img.onerror = () => {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       dibujarElementos(ctx);
     };
     img.src = template.fondo;
@@ -169,6 +183,7 @@ const CertificateDesigner = ({ onSave, onClose, initialTemplate }) => {
         
         let texto = config.texto || '';
         if (elemento.id === 'nombre') texto = 'Nombre del Participante';
+        else if (elemento.id === 'rol') texto = 'Rol del Participante';
         else if (elemento.id === 'evento') texto = 'Nombre del Evento o Curso';
         else if (elemento.id === 'fecha') texto = 'Puno, 15 de Enero de 2024';
         else if (elemento.id === 'codigo') texto = 'Código: ABC123XYZ';
@@ -202,8 +217,10 @@ const CertificateDesigner = ({ onSave, onClose, initialTemplate }) => {
   const handleCanvasClick = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
 
     // Detectar qué elemento fue clickeado
     elementos.forEach(elemento => {
@@ -230,8 +247,10 @@ const CertificateDesigner = ({ onSave, onClose, initialTemplate }) => {
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
 
     const config = template.configuracion[selectedElement];
     if (!config) return;
@@ -256,8 +275,10 @@ const CertificateDesigner = ({ onSave, onClose, initialTemplate }) => {
 
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
 
     setTemplate(prev => ({
       ...prev,
@@ -289,23 +310,22 @@ const CertificateDesigner = ({ onSave, onClose, initialTemplate }) => {
     }));
   };
 
+  const updateElementConfigFor = (elementId, property, value) => {
+    setTemplate(prev => ({
+      ...prev,
+      configuracion: {
+        ...prev.configuracion,
+        [elementId]: {
+          ...prev.configuracion[elementId],
+          [property]: value
+        }
+      }
+    }));
+  };
+
   const handleSave = async () => {
     try {
-      const response = await fetch('/api/admin/certificados/plantillas', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(template)
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        onSave(result);
-      } else {
-        throw new Error('Error al guardar plantilla');
-      }
+      onSave({ nombre: template.nombre, fondo: template.fondo, configuracion: template.configuracion });
     } catch (error) {
       console.error('Error guardando plantilla:', error);
       alert('Error al guardar la plantilla');
@@ -394,9 +414,8 @@ const CertificateDesigner = ({ onSave, onClose, initialTemplate }) => {
                       <elemento.icon className="w-4 h-4 mr-3 text-gray-600" />
                       <span className="font-medium">{elemento.label}</span>
                       <Switch
-                        checked={template.configuracion[elemento.id]?.visible}
-                        onChange={(checked) => updateElementConfig('visible', checked)}
-                        onClick={(e) => e.stopPropagation()}
+                        checked={!!template.configuracion[elemento.id]?.visible}
+                        onChange={(checked) => updateElementConfigFor(elemento.id, 'visible', checked)}
                         className="ml-auto"
                       />
                     </div>

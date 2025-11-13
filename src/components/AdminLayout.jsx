@@ -118,7 +118,7 @@ function AdminLayout({ children, onLogout }) {
         
         {/* Contenido principal */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 min-h-screen w-full lg:w-auto">
-          <div className="max-w-7xl mx-auto">
+          <div className="w-full">
             {children || <Outlet />}
           </div>
           {/* Botón flotante para volver arriba en páginas largas */}

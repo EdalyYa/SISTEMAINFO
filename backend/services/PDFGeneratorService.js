@@ -32,6 +32,25 @@ class PDFGeneratorService {
     // Normalizar separadores para Windows/Linux
     const normalized = s.replace(/\\/g, '/');
     try {
+      // Soporte para rutas absolutas en disco
+      if (path.isAbsolute(normalized)) {
+        return fs.existsSync(normalized) ? normalized : null;
+      }
+      // Soporte para data URLs (base64) para imágenes embebidas
+      if (normalized.startsWith('data:')) {
+        // Guardar temporalmente en disco para que pdfkit pueda leer
+        const tmpDir = path.join(__dirname, '..', 'uploads', 'tmp');
+        if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+        const fileName = `inline-${Date.now()}.png`;
+        const filePath = path.join(tmpDir, fileName);
+        const base64 = normalized.split(',')[1];
+        if (base64) {
+          fs.writeFileSync(filePath, Buffer.from(base64, 'base64'));
+          return filePath;
+        }
+        return null;
+      }
+    
       if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
         // No soportamos cargar por HTTP en el servidor; se omite
         return null;
@@ -192,10 +211,19 @@ class PDFGeneratorService {
     this._renderBackground(doc, templateConfig, pageWidth, pageHeight);
     
     // Renderizar logos
-    this._renderLogos(doc, templateConfig, configuracion, pageWidth);
+    if (configuracion?.usarLogos === true) {
+      this._renderLogos(doc, templateConfig, configuracion, pageWidth);
+    }
     
-    // Renderizar elementos usando la lógica correcta (configuracion.elementos)
-    this._renderElements(doc, certificateData, configuracion);
+    // Renderizar elementos usando la lógica correcta (configuracion)
+    const hasConfigElements = configuracion && Object.keys(configuracion).length > 0;
+    if (hasConfigElements) {
+      this._renderElements(doc, certificateData, configuracion);
+    } else {
+      // Fallback: si no hay configuración definida, renderizar elementos básicos para que
+      // la vista previa no quede sólo con el fondo.
+      this._renderBasicElements(doc, certificateData, configuracion);
+    }
     
     // Renderizar marca de agua sólo si se solicita explícitamente
     const showPreviewWatermark = !!templateConfig.showPreviewWatermark;
@@ -327,7 +355,7 @@ class PDFGeneratorService {
     console.log('🎨 Renderizando elementos con configuración:', Object.keys(configuracion));
     
     // Renderizar nombre del instituto
-    if (configuracion.nombreInstituto) {
+    if (configuracion.nombreInstituto && configuracion.nombreInstituto.visible !== false) {
       const config = configuracion.nombreInstituto;
       doc.fontSize(config.fontSize || 18)
          .fillColor(config.color || '#000000')
@@ -340,7 +368,7 @@ class PDFGeneratorService {
     }
 
     // Renderizar título del certificado
-    if (configuracion.titulo) {
+    if (configuracion.titulo && configuracion.titulo.visible !== false) {
       const config = configuracion.titulo;
       doc.fontSize(config.fontSize || 32)
          .fillColor(config.color || '#000000')
@@ -353,7 +381,7 @@ class PDFGeneratorService {
     }
 
     // Renderizar "Otorgado a"
-    if (configuracion.otorgado) {
+    if (configuracion.otorgado && configuracion.otorgado.visible !== false) {
       const config = configuracion.otorgado;
       doc.fontSize(config.fontSize || 14)
          .fillColor(config.color || '#000000')
@@ -366,7 +394,7 @@ class PDFGeneratorService {
     }
 
     // Renderizar nombre del estudiante
-    if (configuracion.nombreEstudiante) {
+    if (configuracion.nombreEstudiante && configuracion.nombreEstudiante.visible !== false) {
       const config = configuracion.nombreEstudiante;
       doc.fontSize(config.fontSize || 24)
          .fillColor(config.color || '#000000')
@@ -379,7 +407,7 @@ class PDFGeneratorService {
     }
 
     // Renderizar descripción del evento
-    if (configuracion.descripcion) {
+    if (configuracion.descripcion && configuracion.descripcion.visible !== false) {
       const config = configuracion.descripcion;
       doc.fontSize(config.fontSize || 14)
          .fillColor(config.color || '#000000')
@@ -392,7 +420,7 @@ class PDFGeneratorService {
     }
 
     // Renderizar rol/participación (e.g., Asistente)
-    if (configuracion.rolParticipacion) {
+    if (configuracion.rolParticipacion && configuracion.rolParticipacion.visible !== false) {
       const config = configuracion.rolParticipacion;
       const rol = certificateData.rol || (String(certificateData.tipo_certificado || '').toLowerCase().includes('asis') ? 'Asistente' : 'Participante');
       doc.fontSize(config.fontSize || 14)
@@ -406,7 +434,7 @@ class PDFGeneratorService {
     }
 
     // Renderizar detalle del evento (nombre del programa/capacitación)
-    if (configuracion.eventoDetalle) {
+    if (configuracion.eventoDetalle && configuracion.eventoDetalle.visible !== false) {
       const config = configuracion.eventoDetalle;
       const texto = certificateData.nombre_evento || '';
       doc.fontSize(config.fontSize || 14)
@@ -420,7 +448,7 @@ class PDFGeneratorService {
     }
 
     // Renderizar periodo y horas (realizados del ... con una duración de ... horas)
-    if (configuracion.periodoHoras) {
+    if (configuracion.periodoHoras && configuracion.periodoHoras.visible !== false) {
       const config = configuracion.periodoHoras;
       const inicio = new Date(certificateData.fecha_inicio);
       const fin = new Date(certificateData.fecha_fin);
@@ -452,7 +480,7 @@ class PDFGeneratorService {
     }
 
     // Renderizar fecha (Puno, DD de Mes del AAAA)
-    if (configuracion.fecha) {
+    if (configuracion.fecha && configuracion.fecha.visible !== false) {
       const config = configuracion.fecha;
       const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
       const fechaBase = certificateData.fecha_emision
@@ -471,7 +499,7 @@ class PDFGeneratorService {
     }
 
     // Renderizar código de verificación (si está en la configuración)
-    if (configuracion.codigo) {
+    if (configuracion.codigo && configuracion.codigo.visible !== false) {
       const config = configuracion.codigo;
       doc.fontSize(config.fontSize || 12)
          .fillColor(config.color || '#666666')
@@ -484,7 +512,7 @@ class PDFGeneratorService {
     }
 
     // Renderizar QR code
-    if (configuracion.qr) {
+    if (configuracion.qr && configuracion.qr.visible !== false) {
       this._renderQRCode(doc, certificateData, configuracion);
     }
 

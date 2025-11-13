@@ -1,0 +1,205 @@
+Estructura del proyecto (3 niveles, hasta 200 entradas)
+
+f:\NEW_PROJECTS\SISTEMAINFO.V2\SISTEMAINFO\
+├── --prefix
+├── .env.development
+├── .gitattributes
+├── .gitignore
+├── .kiro\
+│   └── specs\
+│       └── tech-news-section\
+├── .vscode\
+│   ├── extensions.json
+│   └── settings.json
+├── EJECUTAR_MIGRACION.md
+├── FUNCIONALIDADES_SISTEMA.txt
+├── LaravelProjectPlan.md
+├── README-INSTALACION.txt
+├── README.md
+├── TODO.md
+├── admin-panel\
+│   ├── index.html
+│   ├── package.json
+│   ├── src\
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   └── vite.config.js
+├── app\
+│   ├── Http\
+│   │   └── Controllers\
+│   └── Models\
+│       └── Certificado.php
+├── backend\
+│   ├── .env.example
+│   ├── .gitattributes
+│   ├── .gitignore
+│   ├── Dockerfile
+│   ├── README-DEPLOY.md
+│   ├── auth.js
+│   ├── certificados.js
+│   ├── config\
+│   │   └── database.js
+│   ├── configuracion.js
+│   ├── cursos.js
+│   ├── database\
+│   │   ├── connection.js
+│   │   └── migrations\
+│   ├── docentes.js
+│   ├── fix_users_table.sql
+│   ├── horarios_schema.sql
+│   ├── index.js
+│   ├── matriculas.js
+│   ├── middleware\
+│   │   └── auth.js
+│   ├── migrations\
+│   ├── nodemon.json
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── programas.js
+│   ├── public\
+│   │   └── certificados\
+│   ├── reclamaciones.js
+│   ├── render.yaml
+│   ├── routes\
+│   │   ├── ApiError.js
+│   │   ├── cifrasLogros.js
+│   │   ├── cursosLibres.js
+│   │   ├── documentos.js
+│   │   └── horarios.js
+│   ├── schema.sql
+│   ├── schema_complete.sql
+│   ├── schema_extended.sql
+│   ├── scripts\
+│   ├── services\
+│   ├── test-admin-direct.pdf
+│   ├── test-login.js
+│   ├── test-specific-cert.js
+│   ├── test_modulos.js
+│   ├── users.js
+│   └── verify-token.js
+├── basic.html
+├── dataNov09.sql
+├── database\
+│   └── migrations\
+├── deploy\
+│   └── Caddyfile
+├── docker-compose.yml
+├── dockerfile
+├── ejecutar-migracion.bat
+├── frontend\
+│   └── Dockerfile
+├── index.html
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── public\
+│   ├── favicon.svg
+│   └── robots.txt
+├── resources\
+│   └── views\
+│       └── admin\
+├── src\
+│   ├── AdminApp.jsx
+│   ├── App.jsx
+│   ├── Imagenes\
+│   │   ├── BasedeDatos.png
+│   │   ├── Excel.png
+│   │   ├── certificados\
+│   │   ├── cursos\
+│   │   ├── logo-infouna.svg
+│   │   ├── people\
+│   │   └── qr-code.svg
+│   ├── Layout.jsx
+│   ├── backend\
+│   │   └── routes\
+│   ├── components\
+│   │   ├── AdminLayout.jsx
+│   │   ├── ApiError.js
+│   │   ├── Chatbot.jsx
+│   │   ├── DirectorBio.jsx
+│   │   ├── Footer.jsx
+│   │   ├── HeroBanner.jsx
+│   │   ├── Loader.jsx
+│   │   ├── NewsCard.jsx
+│   │   ├── PromoModal.jsx
+│   │   ├── SocialHub.jsx
+│   │   ├── Timeline.jsx
+│   │   ├── VideoModal.jsx
+│   │   ├── admin\
+│   │   └── ui\
+│   ├── config\
+│   │   └── api.js
+│   ├── examples\
+│   ├── index.css
+│   ├── logo.png
+│   ├── main.jsx
+│   ├── models\
+│   ├── pages\
+│   │   ├── BlogNoticias.jsx
+│   │   ├── Calendario.jsx
+│   │   ├── CourseDetails.jsx
+│   │   ├── Cursos.jsx
+│   │   ├── CursosDeModulo.jsx
+│   │   ├── CursosLibres.jsx
+│   │   ├── Descargables.jsx
+│   │   ├── Documentos.jsx
+│   │   ├── Equipo.jsx
+│   │   ├── FAQ.jsx
+│   │   ├── Historia.jsx
+│   │   ├── HomePage.jsx
+│   │   ├── Horarios.jsx
+│   │   ├── Matricula.jsx
+│   │   ├── MisionVision.jsx
+│   │   ├── Modulos.jsx
+│   │   ├── Nosotros.jsx
+│   │   ├── Programas.jsx
+│   │   ├── Reclamaciones.jsx
+│   │   ├── Redes.jsx
+│   │   ├── Tramites.jsx
+│   │   └── admin\
+│   ├── services\
+│   ├── styles\
+│   │   └── design-tokens.css
+│   ├── types\
+│   ├── utils\
+│   │   ├── assetUrl.js
+│   │   └── techNewsConfig.js
+│   └── videos\
+│       └── Video.mp4
+├── tailwind.config.js
+├── tailwind\
+│   ├── .git_disabled\
+│   │   ├── HEAD
+│   │   ├── config
+│   │   ├── hooks\
+│   │   ├── index
+│   │   ├── info\
+│   │   ├── logs\
+│   │   └── refs\
+│   ├── .gitignore
+│   ├── README.md
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.js
+│   ├── public\
+│   │   ├── favicon.ico
+│   │   ├── index.html
+│   │   ├── logo192.png
+│   │   ├── logo512.png
+│   │   ├── manifest.json
+│   │   └── robots.txt
+│   ├── src\
+│   │   ├── App.css
+│   │   ├── App.js
+│   │   ├── App.test.js
+│   │   ├── index.css
+│   │   ├── index.js
+│   │   ├── logo.svg
+│   │   └── setupTests.js
+│   └── tailwind.config.js
+├── uploads\
+│   └── certificados_masivos\
+├── vercel.json
+└── vite.config.mjs
+
+Nota: Este listado es una vista rápida de 3 niveles. Si necesitas más profundidad o incluir todos los archivos dentro de carpetas específicas (por ejemplo `src/components`), indícame qué carpetas quieres expandir y lo genero.
