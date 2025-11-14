@@ -67,6 +67,10 @@ export default function SocialHub() {
     return () => observer.disconnect();
   }, []);
 
+  React.useEffect(() => {
+    setTtShouldLoad(true);
+  }, []);
+
   // Inyectar el script de TikTok sólo cuando sea necesario
   React.useEffect(() => {
     if (!ttShouldLoad) return;
@@ -194,7 +198,7 @@ export default function SocialHub() {
           </div>
 
           {/* TikTok perfil */}
-          <div ref={ttContainerRef} className="rounded-xl overflow-hidden shadow-lg border border-blue-100 p-2">
+          <div ref={ttContainerRef} className="rounded-xl overflow-hidden shadow-lg border border-blue-100 p-2 min-h-[400px]">
             {!ttError && (
               <blockquote
                 className="tiktok-embed"
