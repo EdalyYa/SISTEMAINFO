@@ -1,4 +1,5 @@
 import React from "react";
+import { API_BASE } from "../config/api";
 
 const LINKS = {
   facebook: "https://www.facebook.com/IIUNAP/",
@@ -42,12 +43,14 @@ function Icon({ name, className = "w-6 h-6" }) {
 export default function SocialHub() {
   const pageUrl = encodeURIComponent(LINKS.facebook);
   const fbPluginUrl = `https://www.facebook.com/plugins/page.php?href=${pageUrl}&tabs=timeline&width=500&height=400&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true`;
+  const TIKTOK_MODE = import.meta.env.VITE_TIKTOK_MODE || 'auto';
 
   // Cargar script de TikTok de forma diferida cuando el bloque entra en vista
   const [ttInitKey, setTtInitKey] = React.useState(0);
   const [ttReady, setTtReady] = React.useState(false);
   const [ttError, setTtError] = React.useState(false);
   const [ttShouldLoad, setTtShouldLoad] = React.useState(false);
+  const [ttLatest, setTtLatest] = React.useState(null);
   const ttContainerRef = React.useRef(null);
 
   // Observer para detectar visibilidad del bloque de TikTok
@@ -70,6 +73,25 @@ export default function SocialHub() {
   React.useEffect(() => {
     setTtShouldLoad(true);
   }, []);
+
+  React.useEffect(() => {
+    async function loadLatest() {
+      try {
+        const res = await fetch(`${API_BASE}/social/tiktok/latest/infouna`, { cache: 'no-cache' });
+        if (!res.ok) throw new Error('fail');
+        const data = await res.json();
+        if (data && data.id && data.url) {
+          setTtLatest({ id: String(data.id), url: String(data.url), cover: data.cover || null });
+          setTtError(false);
+        } else {
+          setTtLatest(null);
+        }
+      } catch (_) {
+        setTtLatest(null);
+      }
+    }
+    if (ttShouldLoad) loadLatest();
+  }, [ttShouldLoad]);
 
   // Inyectar el script de TikTok sólo cuando sea necesario
   React.useEffect(() => {
@@ -193,36 +215,34 @@ export default function SocialHub() {
             )}
           </div>
 
-          {/* TikTok perfil */}
           <div ref={ttContainerRef} className="rounded-xl overflow-hidden shadow-lg border border-blue-100 p-2 min-h-[400px]">
-            {!ttError && (
-              <blockquote
-                className="tiktok-embed"
-                cite="https://www.tiktok.com/@infouna"
-                data-unique-id="infouna"
-                data-embed-type="creator"
-                data-lang="es-ES"
-                style={{ maxWidth: '720px', minWidth: '288px' }}
-                key={ttInitKey}
-              >
-                <section>
-                  <a target="_blank" rel="noreferrer" href="https://www.tiktok.com/@infouna?refer=creator_embed">@infouna</a>
-                </section>
-              </blockquote>
-            )}
-            {ttError && (
-              <div className="p-4">
-                <p className="text-sm text-gray-600">No se pudo cargar la vista previa de TikTok.</p>
-                <a href={LINKS.tiktok} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center px-3 py-2 bg-black text-white rounded-lg">Abrir perfil en TikTok</a>
+            {(TIKTOK_MODE === 'card' || ttError || !ttLatest) ? (
+              <div className="p-2">
+                {ttLatest?.cover ? (
+                  <a href={ttLatest.url} target="_blank" rel="noreferrer" className="block">
+                    <img src={ttLatest.cover} alt="Último video" className="w-full h-56 object-cover rounded" />
+                  </a>
+                ) : (
+                  <div className="w-full h-56 rounded bg-gray-100 flex items-center justify-center text-gray-500">TikTok</div>
+                )}
+                <div className="mt-3 flex items-center gap-2">
+                  <a href={(ttLatest && ttLatest.url) || LINKS.tiktok} target="_blank" rel="noreferrer" className="px-3 py-2 bg-black text-white rounded-lg">Ver en TikTok</a>
+                  <a href={LINKS.tiktok} target="_blank" rel="noreferrer" className="px-3 py-2 bg-gray-100 text-gray-800 rounded-lg">Perfil</a>
+                </div>
               </div>
+            ) : (
+              <iframe
+                title="TikTok último video"
+                src={`https://www.tiktok.com/embed/v2/${ttLatest.id}?lang=es-ES`}
+                width="100%"
+                height="400"
+                style={{ border: 'none' }}
+                loading="lazy"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                key={ttLatest.id}
+              ></iframe>
             )}
-            {/* Fallback si el script de TikTok está bloqueado */}
-            <noscript>
-              <div className="p-4">
-                <p className="text-sm text-gray-600">No se pudo cargar la vista previa de TikTok.</p>
-                <a href={LINKS.tiktok} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center px-3 py-2 bg-black text-white rounded-lg">Abrir perfil en TikTok</a>
-              </div>
-            </noscript>
           </div>
 
           {/* WhatsApp (CTA + QR) */}

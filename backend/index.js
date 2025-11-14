@@ -179,6 +179,65 @@ app.get('/api/cursos', async (req, res) => {
   }
 });
 
+app.get('/api/social/tiktok/latest/:handle', async (req, res) => {
+  try {
+    const handle = String(req.params.handle || '').replace(/^@/, '');
+    if (!handle) return res.status(400).json({ error: 'Handle requerido' });
+    const target = `https://www.tiktok.com/@${handle}`;
+    const resp = await fetch(target, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'es-ES,es;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Referer': 'https://www.tiktok.com/'
+      }
+    });
+    if (!resp.ok) {
+      return res.json({ id: null, url: `https://www.tiktok.com/@${handle}`, cover: null, profile: true });
+    }
+    const html = await resp.text();
+    const mSigi = html.match(/<script id="SIGI_STATE"[^>]*>([\s\S]*?)<\/script>/);
+    const mNext = html.match(/<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    let data = null;
+    try { data = mSigi ? JSON.parse(mSigi[1]) : null; } catch(_) {}
+    if (!data) {
+      try { data = mNext ? JSON.parse(mNext[1]) : null; } catch(_) {}
+    }
+    const collectVideos = (obj, acc=[]) => {
+      try {
+        if (!obj || typeof obj !== 'object') return acc;
+        if (obj.id && obj.video) acc.push(obj);
+        for (const k of Object.keys(obj)) {
+          const v = obj[k];
+          if (v && typeof v === 'object') collectVideos(v, acc);
+        }
+        return acc;
+      } catch(_) { return acc; }
+    };
+    let videos = [];
+    if (data && data.ItemModule) {
+      videos = Object.values(data.ItemModule || {});
+    } else if (data) {
+      videos = collectVideos(data, []);
+    }
+    videos = Array.isArray(videos) ? videos : [];
+    if (!videos.length) {
+      return res.json({ id: null, url: `https://www.tiktok.com/@${handle}`, cover: null, profile: true });
+    }
+    videos.sort((a,b)=> Number(b.createTime||0) - Number(a.createTime||0));
+    const v = videos[0];
+    const vid = String(v.id || v.id_str || '').trim();
+    const cover = (v && v.video && (v.video.originCover || v.video.cover || v.video.dynamicCover)) || null;
+    if (!vid) {
+      return res.json({ id: null, url: `https://www.tiktok.com/@${handle}`, cover, profile: true });
+    }
+    return res.json({ id: vid, url: `https://www.tiktok.com/@${handle}/video/${vid}`, cover });
+  } catch (e) {
+    console.error('TikTok latest error:', e && e.message ? e.message : e);
+    return res.json({ id: null, url: `https://www.tiktok.com/@${String(req.params.handle||'').replace(/^@/,'')}`, cover: null, profile: true });
+  }
+});
+
 // Use modal promocional routes
 app.use('/api/modal-promocional', modalPromocionalRoutes(pool, { authenticateToken }));
 
