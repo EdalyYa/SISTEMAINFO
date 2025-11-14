@@ -198,6 +198,10 @@ app.get('/api/social/tiktok/latest/:handle', async (req, res) => {
     const html = await resp.text();
     const mSigi = html.match(/<script id="SIGI_STATE"[^>]*>([\s\S]*?)<\/script>/);
     const mNext = html.match(/<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    const mOgImg = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+    const mOgImgSecure = html.match(/<meta[^>]+property=["']og:image:secure_url["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+    const mTwitterImg = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+    const metaCover = (mOgImg && mOgImg[1]) || (mOgImgSecure && mOgImgSecure[1]) || (mTwitterImg && mTwitterImg[1]) || null;
     let data = null;
     try { data = mSigi ? JSON.parse(mSigi[1]) : null; } catch(_) {}
     if (!data) {
@@ -227,7 +231,7 @@ app.get('/api/social/tiktok/latest/:handle', async (req, res) => {
     videos.sort((a,b)=> Number(b.createTime||0) - Number(a.createTime||0));
     const v = videos[0];
     const vid = String(v.id || v.id_str || '').trim();
-    const cover = (v && v.video && (v.video.originCover || v.video.cover || v.video.dynamicCover)) || null;
+    const cover = (v && v.video && (v.video.originCover || v.video.cover || v.video.dynamicCover)) || metaCover || null;
     if (!vid) {
       return res.json({ id: null, url: `https://www.tiktok.com/@${handle}`, cover, profile: true });
     }

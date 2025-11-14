@@ -14,9 +14,11 @@ module.exports = (pool, auth) => {
       cb(null, uploadsDir);
     },
     filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname);
+      const ext = (path.extname(file.originalname) || '').toLowerCase();
       const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9-_]/g, '_');
-      cb(null, `${Date.now()}_${base}${ext}`);
+      const id = Date.now().toString(36);
+      const safeBase = base.slice(0, 24);
+      cb(null, `${id}_${safeBase}${ext}`);
     }
   });
   const upload = multer({
@@ -120,11 +122,13 @@ module.exports = (pool, auth) => {
       const _precio = precio || 0;
       const _estado = estado || 'activo';
 
+      const iconoNombre = icono ? path.basename(String(icono)) : '📚';
+      const iconoSafe = iconoNombre.slice(0, 50);
       const [result] = await pool.query(`
         INSERT INTO cursos_libres 
         (nombre, categoria, icono, color, descripcion, duracion, modalidad, nivel, instructor, precio, estado, fecha_creacion)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-      `, [nombre, _categoria, icono, _color, _descripcion, _duracion, _modalidad, _nivel, _instructor, _precio, _estado]);
+      `, [nombre, _categoria, iconoSafe, _color, _descripcion, _duracion, _modalidad, _nivel, _instructor, _precio, _estado]);
 
       const courseId = result.insertId;
 
@@ -184,6 +188,8 @@ module.exports = (pool, auth) => {
       const _instructor = instructor ?? existing[0].instructor ?? '';
       const _precio = precio ?? existing[0].precio ?? 0;
       const _estado = estado || existing[0].estado || 'activo';
+      const iconoNombre = (icono ? path.basename(String(icono)) : (existing[0].icono || '📚'));
+      const iconoSafe = iconoNombre.slice(0, 50);
 
       const [result] = await pool.query(`
         UPDATE cursos_libres 
@@ -191,7 +197,7 @@ module.exports = (pool, auth) => {
             duracion = ?, modalidad = ?, nivel = ?, instructor = ?, precio = ?, 
             estado = ?, fecha_actualizacion = NOW()
         WHERE id = ?
-      `, [nombre, _categoria, icono, _color, _descripcion, _duracion, _modalidad, _nivel, _instructor, _precio, _estado, req.params.id]);
+      `, [nombre, _categoria, iconoSafe, _color, _descripcion, _duracion, _modalidad, _nivel, _instructor, _precio, _estado, req.params.id]);
 
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: 'Curso libre no encontrado' });

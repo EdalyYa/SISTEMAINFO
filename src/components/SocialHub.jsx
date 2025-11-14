@@ -43,7 +43,8 @@ function Icon({ name, className = "w-6 h-6" }) {
 export default function SocialHub() {
   const pageUrl = encodeURIComponent(LINKS.facebook);
   const fbPluginUrl = `https://www.facebook.com/plugins/page.php?href=${pageUrl}&tabs=timeline&width=500&height=400&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true`;
-  const TIKTOK_MODE = import.meta.env.VITE_TIKTOK_MODE || 'auto';
+  const TIKTOK_MODE = import.meta.env.VITE_TIKTOK_MODE || 'card';
+  const OVERRIDE_TT_VIDEO_URL = import.meta.env.VITE_TIKTOK_VIDEO_URL || null;
 
   // Cargar script de TikTok de forma diferida cuando el bloque entra en vista
   const [ttInitKey, setTtInitKey] = React.useState(0);
@@ -77,6 +78,13 @@ export default function SocialHub() {
   React.useEffect(() => {
     async function loadLatest() {
       try {
+        if (OVERRIDE_TT_VIDEO_URL) {
+          const m = String(OVERRIDE_TT_VIDEO_URL).match(/video\/(\d+)/);
+          const id = m ? m[1] : null;
+          setTtLatest(id ? { id, url: String(OVERRIDE_TT_VIDEO_URL), cover: null } : null);
+          setTtError(!id);
+          return;
+        }
         const res = await fetch(`${API_BASE}/social/tiktok/latest/infouna`, { cache: 'no-cache' });
         if (!res.ok) throw new Error('fail');
         const data = await res.json();
