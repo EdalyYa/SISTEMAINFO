@@ -98,15 +98,11 @@ export default function SocialHub() {
     const check = () => {
       const el = ttContainerRef.current;
       if (!el) return;
-      const hasContent = el.querySelector('.tiktok-embed')?.nextElementSibling || el.querySelector('iframe');
-      const h = el.offsetHeight;
-      if (hasContent && h > 100) {
-        setTtReady(true);
-        setTtError(false);
-      } else {
-        setTtReady(false);
-        setTtError(true);
-      }
+      const iframe = el.querySelector('iframe');
+      const src = String(iframe?.src || '');
+      const ok = !!iframe && /tiktok\.com/i.test(src) && (iframe.offsetHeight || el.offsetHeight) > 200;
+      if (ok) { setTtReady(true); setTtError(false); }
+      else { setTtReady(false); setTtError(true); }
     };
     const t1 = setTimeout(check, 1200);
     const t2 = setTimeout(check, 3500);
