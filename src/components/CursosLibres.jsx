@@ -7,6 +7,7 @@ import courseImg2 from '../Imagenes/cursos/course2.jpg';
 import courseImg3 from '../Imagenes/cursos/course3.jpg';
 import courseImg4 from '../Imagenes/cursos/course4.jpg';
 import CarouselCursos from './CarouselCursos';
+import { FaMicrochip } from 'react-icons/fa';
 
 const CursosLibres = () => {
   const location = useLocation();
@@ -300,17 +301,18 @@ const CursosLibres = () => {
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        {/* Header compacto */}
-        <div className="text-center mb-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
-            Cursos Libres
-          </h2>
-          <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
-            Cursos cortos y especializados para impulsar tus habilidades.
-          </p>
+        <div className="relative rounded-xl mb-4 overflow-hidden bg-gradient-to-r from-white to-blue-50 border border-blue-100">
+          <div className="text-center px-4 py-3">
+            <div className="inline-flex items-center gap-2 mb-1">
+              <FaMicrochip className="text-blue-700" />
+              <h2 className="text-2xl md:text-3xl font-bold text-blue-900">Cursos Libres</h2>
+            </div>
+            <p className="text-gray-700 text-sm md:text-base max-w-2xl mx-auto font-mono">
+              Cursos cortos y especializados para impulsar tus habilidades.
+            </p>
+          </div>
         </div>
 
-        {/* Barra de búsqueda compacta */}
         <div className="max-w-md md:max-w-none md:w-96 mb-3 mx-auto">
           <div className="relative">
             <input
@@ -318,10 +320,10 @@ const CursosLibres = () => {
               placeholder="Buscar cursos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-sm"
+              className="w-full px-4 py-2 pl-10 pr-4 text-blue-900 bg-white border border-blue-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-200 transition-all duration-300 text-sm font-mono"
             />
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -332,7 +334,7 @@ const CursosLibres = () => {
 
         {/* Primer Carrusel - Todos los cursos hacia la derecha */}
         <div className="relative">
-          <div className="bg-white rounded-2xl p-4 md:p-5 border border-gray-100 shadow-sm">
+          <div className="bg-white rounded-2xl p-4 md:p-5 border border-blue-100 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-gray-800">Cursos Libres - Oferta Completa</h3>
               <span className="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full">
@@ -347,10 +349,11 @@ const CursosLibres = () => {
               <div className="hidden lg:block absolute inset-y-0 left-[33.333%] w-px bg-gray-300"></div>
               <div className="hidden lg:block absolute inset-y-0 left-[66.666%] w-px bg-gray-300"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                {cursosVisibles.map((curso, index) => (
-                  <div key={`list-${curso.id}-${index}`} className="group bg-white border border-gray-100 rounded-xl p-3 hover:shadow-sm transition-shadow">
+              {cursosVisibles.map((curso, index) => (
+                  <div key={`list-${curso.id}-${index}`} className="group bg-white border border-blue-100 rounded-xl overflow-hidden p-3 hover:shadow-sm transition-shadow">
+                  <div className="h-1 bg-gradient-to-r from-blue-700 via-cyan-600 to-indigo-700"></div>
                   <div className="flex gap-4 items-start">
-                    <div className="w-28 h-20 md:w-36 md:h-24 bg-white ring-1 ring-gray-200 rounded-xl overflow-hidden shadow-sm group-hover:scale-[1.01] transition-transform duration-300">
+                    <div className="w-28 h-20 md:w-36 md:h-24 bg-white ring-1 ring-blue-100 rounded-xl overflow-hidden shadow-sm group-hover:scale-[1.01] transition-transform duration-300">
                       <img
                         src={resolverImagenCurso(curso)}
                         alt={`Imagen ${curso.nombre}`}
@@ -360,7 +363,7 @@ const CursosLibres = () => {
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
-                        <h3 className="font-semibold text-gray-900 text-base leading-tight group-hover:text-blue-700 transition-colors duration-300">
+                        <h3 className="font-semibold text-blue-900 text-base leading-tight group-hover:text-blue-700 transition-colors duration-300">
                           {fixMojibake(curso.nombre)}
                         </h3>
                         <button 
@@ -374,10 +377,10 @@ const CursosLibres = () => {
                         {fixMojibake(curso.descripcion)}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                        <span className="text-xs font-mono font-semibold bg-blue-50 text-blue-700 ring-1 ring-blue-200 px-2 py-1 rounded-full">
                           {categorias.find(c => c.id === curso.categoria)?.icono} {categorias.find(c => c.id === curso.categoria)?.nombre}
                         </span>
-                        <span className="text-xs text-blue-700 font-medium">{curso.horas ? `${curso.horas}h` : '40h'}</span>
+                        <span className="text-xs text-blue-700 font-mono font-medium">{curso.horas ? `${curso.horas}h` : '40h'}</span>
                       </div>
                     </div>
                   </div>

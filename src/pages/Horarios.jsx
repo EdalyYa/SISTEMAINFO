@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../config/api';
-import { FaClock, FaSearch, FaDesktop, FaUsers } from 'react-icons/fa';
+import { FaClock, FaSearch, FaDesktop, FaUsers, FaMicrochip } from 'react-icons/fa';
 
 function Horarios() {
   const [horariosData, setHorariosData] = useState([]);
@@ -139,14 +139,22 @@ function Horarios() {
 
   return (
     <section className="max-w-7xl mx-auto px-4 py-3">
-      {/* Encabezado compacto */}
-      <div className="flex items-center gap-1 mb-2">
-        <FaClock className="text-xl text-blue-600" />
-        <h1 className="text-xl font-bold text-blue-900">Horarios de Cursos</h1>
+      <div className="relative mb-3 rounded-xl overflow-hidden bg-gradient-to-r from-white to-blue-50 border border-blue-100 p-4">
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 mb-1">
+            <FaMicrochip className="text-blue-700" />
+            <h1 className="text-xl md:text-2xl font-bold text-blue-900">Horarios de Cursos</h1>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            <span className="inline-flex px-2.5 py-1 text-[11px] font-mono font-semibold rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200">Total: {totalCursos}</span>
+            <span className="inline-flex px-2.5 py-1 text-[11px] font-mono font-semibold rounded-full bg-green-50 text-green-700 ring-1 ring-green-200">Virtual: {cursosVirtuales}</span>
+            <span className="inline-flex px-2.5 py-1 text-[11px] font-mono font-semibold rounded-full bg-orange-50 text-orange-700 ring-1 ring-orange-200">Presencial: {cursosPresenciales}</span>
+          </div>
+        </div>
       </div>
 
       {/* Filtros generales: búsqueda y programa (aplican a ambas columnas) */}
-      <div className="bg-white rounded-lg p-2 mb-2 shadow-sm">
+      <div className="bg-white rounded-lg p-2 mb-2 shadow-sm border border-gray-200">
         <div className="flex flex-col sm:flex-row gap-2 items-stretch">
           <div className="relative w-full sm:w-64">
             <select
@@ -178,8 +186,11 @@ function Horarios() {
       {/* Dos columnas: izquierda Libres, derecha INFONA. Solo Curso, Horario, Modalidad */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Columna: Cursos libres */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="px-3 py-1 border-b border-gray-200 bg-gray-50 text-xs font-semibold text-purple-800">Cursos libres</div>
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden border-l-4 border-purple-300">
+          <div className="flex items-center justify-between px-3 py-1 border-b border-gray-200 bg-gray-50 text-xs font-semibold text-purple-800">
+            <span className="inline-flex items-center gap-1">Cursos libres</span>
+            <span className="inline-flex px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-semibold">{cursosLibres.length}</span>
+          </div>
           {/* Filtros columna Libres */}
           <div className="px-3 py-1 flex flex-col sm:flex-row gap-2 items-stretch">
             <select
@@ -247,8 +258,11 @@ function Horarios() {
         </div>
 
         {/* Columna: Cursos INFONA */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="px-3 py-1 border-b border-gray-200 bg-gray-50 text-xs font-semibold text-blue-800">Cursos INFONA</div>
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden border-l-4 border-blue-300">
+          <div className="flex items-center justify-between px-3 py-1 border-b border-gray-200 bg-gray-50 text-xs font-semibold text-blue-800">
+            <span className="inline-flex items-center gap-1">Cursos INFONA</span>
+            <span className="inline-flex px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-semibold">{cursosInfona.length}</span>
+          </div>
           {/* Filtros columna INFONA */}
           <div className="px-3 py-1 flex flex-col sm:flex-row gap-2 items-stretch">
             <select
@@ -336,13 +350,13 @@ function Horarios() {
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={currentPage <= 1}
-            className={`text-xs px-2 py-1 rounded ${currentPage <= 1 ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'}`}
+            className={`text-xs px-2 py-1 rounded ${currentPage <= 1 ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700 shadow-sm'}`}
           >Anterior</button>
           <span className="text-xs text-gray-700">Página {currentPage} de {totalPages}</span>
           <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage >= totalPages}
-            className={`text-xs px-2 py-1 rounded ${currentPage >= totalPages ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700'}`}
+            className={`text-xs px-2 py-1 rounded ${currentPage >= totalPages ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-700 shadow-sm'}`}
           >Siguiente</button>
         </div>
       </div>

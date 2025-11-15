@@ -113,6 +113,16 @@ function AdminSidebar({ onClose }) {
         </svg>
       )
     }
+    ,{
+      name: 'Videos Informativos',
+      path: 'videos-informativos',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" strokeWidth={2} />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9.5l5 2.5-5 2.5v-5z" />
+        </svg>
+      )
+    }
   ];
 
   const certificadosItems = [

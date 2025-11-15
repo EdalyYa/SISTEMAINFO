@@ -11,6 +11,7 @@ import HorariosAdmin from './pages/admin/HorariosAdmin';
 import CursosLibresAdmin from './pages/admin/CursosLibresAdmin';
 import ModalPromocionalAdmin from './pages/admin/ModalPromocionalAdmin';
 import CifrasLogrosAdmin from './pages/admin/CifrasLogrosAdmin';
+import VideosInformativosAdmin from './pages/admin/VideosInformativosAdmin';
 import AdminLogin from './pages/admin/AdminLogin';
 import Matriculas from './pages/admin/Matriculas';
 import Docentes from './pages/admin/Docentes';
@@ -185,6 +186,7 @@ function AdminApp() {
           <Route path="cursos-libres" element={<CursosLibresAdmin />} />
           <Route path="modal-promocional" element={<ModalPromocionalAdmin />} />
           <Route path="cifras-logros" element={<CifrasLogrosAdmin />} />
+          <Route path="videos-informativos" element={<VideosInformativosAdmin />} />
           <Route path="documentos" element={<DocumentosAdmin />} />
           <Route path="matriculas" element={<Matriculas />} />
           <Route path="docentes" element={<Docentes />} />

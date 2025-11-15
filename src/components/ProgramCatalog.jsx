@@ -161,7 +161,7 @@ function ProgramCatalog() {
   };
 
   const handleDetailsClick = (id) => {
-    navigate(`/detalles/${id}`);
+    navigate(`/programas/${id}`);
   };
 
   // Filtrado por modalidad y búsqueda

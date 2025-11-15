@@ -27,6 +27,16 @@
   }
 }
 
+/* Global Typography Improvements */
+html, body {
+  font-family: var(--font-primary);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-secondary);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
 /* === COMPONENT BASE CLASSES === */
 
 /* Modern Card Component */

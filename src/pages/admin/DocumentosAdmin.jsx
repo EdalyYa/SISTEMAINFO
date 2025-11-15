@@ -10,10 +10,46 @@ const categoriasDefault = [
   'Otros'
 ];
 
+const tramiteOptions = [
+  { slug: 'solicitud-certificado', label: 'Solicitud de Certificado' },
+  { slug: 'constancia-estudios', label: 'Constancia de Estudios' },
+  { slug: 'duplicado-carnet', label: 'Duplicado de Carnet' }
+];
+
+const normalizeSlug = (s) => {
+  const baseRaw = String(s || '').toLowerCase();
+  const removed = baseRaw.replace(/^tramite:\s*/, '').trim();
+  const dashed = removed.replace(/\s+/g, '-').replace(/-+/g, '-');
+  return dashed.replace(/-de-/g, '-');
+};
+
+const deriveTramiteSlug = (title) => {
+  const t = String(title || '').toLowerCase();
+  if (t.includes('constancia')) return 'constancia-estudios';
+  if (t.includes('certificado')) return 'solicitud-certificado';
+  if (t.includes('duplicado')) return 'duplicado-carnet';
+  return '';
+};
+
+const labelForSlug = (slug) => {
+  const s = normalizeSlug(slug);
+  const opt = tramiteOptions.find(o => o.slug === s);
+  return opt ? opt.label : (s || null);
+};
+
+const getTramiteFromTags = (tags) => {
+  const arr = Array.isArray(tags) ? tags : [];
+  const t = arr.find((x) => String(x || '').startsWith('tramite:'));
+  if (!t) return null;
+  const slug = normalizeSlug(t);
+  const opt = tramiteOptions.find(o => o.slug === slug);
+  return opt ? opt.label : slug;
+};
+
 function DocumentosAdmin() {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ titulo: '', descripcion: '', categoria: '', etiquetas: '', publico: true });
+  const [form, setForm] = useState({ titulo: '', descripcion: '', categoria: 'Formularios', etiquetas: '', publico: true, tramiteSlug: '' });
   const [file, setFile] = useState(null);
   const [subiendo, setSubiendo] = useState(false);
 
@@ -41,10 +77,19 @@ function DocumentosAdmin() {
       fd.append('titulo', form.titulo);
       if (form.descripcion) fd.append('descripcion', form.descripcion);
       if (form.categoria) fd.append('categoria', form.categoria);
-      if (form.etiquetas) fd.append('etiquetas', form.etiquetas);
+      const etiquetasCombined = [
+        ...(form.etiquetas ? String(form.etiquetas).split(',').map(s => s.trim()).filter(Boolean) : []),
+        ...(() => {
+          const chosen = normalizeSlug(form.tramiteSlug);
+          const fallback = deriveTramiteSlug(form.titulo);
+          const slug = chosen || fallback;
+          return slug ? [`tramite:${slug}`] : [];
+        })()
+      ].join(',');
+      if (etiquetasCombined) fd.append('etiquetas', etiquetasCombined);
       fd.append('publico', form.publico ? '1' : '0');
       await api.post('/documentos/admin/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setForm({ titulo: '', descripcion: '', categoria: '', etiquetas: '', publico: true });
+      setForm({ titulo: '', descripcion: '', categoria: 'Formularios', etiquetas: '', publico: true, tramiteSlug: '' });
       setFile(null);
       await fetchDocs();
     } catch (e) {
@@ -105,6 +150,13 @@ function DocumentosAdmin() {
               <input className="w-full border rounded px-3 py-2" placeholder="reglamento, alumnos, 2024" value={form.etiquetas} onChange={e => setForm({ ...form, etiquetas: e.target.value })} />
             </div>
             <div>
+              <label className="block text-sm text-gray-700 mb-1">Trámite asociado (opcional)</label>
+              <select className="w-full border rounded px-3 py-2" value={form.tramiteSlug} onChange={e => setForm({ ...form, tramiteSlug: e.target.value })}>
+                <option value="">Sin asociación</option>
+                {tramiteOptions.map(t => (<option key={t.slug} value={t.slug}>{t.label}</option>))}
+              </select>
+            </div>
+            <div>
               <label className="block text-sm text-gray-700 mb-1">Archivo</label>
               <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" onChange={e => setFile(e.target.files[0] || null)} />
             </div>
@@ -130,6 +182,7 @@ function DocumentosAdmin() {
                   <th className="px-3 py-2">Título</th>
                   <th className="px-3 py-2">Categoría</th>
                   <th className="px-3 py-2">Etiquetas</th>
+                  <th className="px-3 py-2">Trámite</th>
                   <th className="px-3 py-2">Tamaño</th>
                   <th className="px-3 py-2">Descargas</th>
                   <th className="px-3 py-2">Público</th>
@@ -145,6 +198,24 @@ function DocumentosAdmin() {
                     </td>
                     <td className="px-3 py-2">{doc.categoria || '-'}</td>
                     <td className="px-3 py-2">{Array.isArray(doc.etiquetas) ? doc.etiquetas.join(', ') : '-'}</td>
+                    <td className="px-3 py-2">
+                      <select className="border rounded px-2 py-1 text-xs" value={(() => {
+                        const fromTag = Array.isArray(doc.etiquetas) ? normalizeSlug((doc.etiquetas.find(e => String(e).startsWith('tramite:')) || '')) : '';
+                        return fromTag || deriveTramiteSlug(doc.titulo);
+                      })()} onChange={async (e) => {
+                        const slug = normalizeSlug(e.target.value);
+                        const others = Array.isArray(doc.etiquetas) ? doc.etiquetas.filter(x => !String(x).startsWith('tramite:')) : [];
+                        const next = slug ? [...others, `tramite:${slug}`] : others;
+                        try {
+                          await api.patch(`/documentos/admin/${doc.id}`, { etiquetas: next.join(',') });
+                          await fetchDocs();
+                        } catch (err) { alert('No se pudo actualizar'); }
+                      }}>
+                        <option value="">Sin asociación</option>
+                        {tramiteOptions.map(t => (<option key={t.slug} value={t.slug}>{t.label}</option>))}
+                      </select>
+                      <div className="text-gray-500 text-xs mt-1">{getTramiteFromTags(doc.etiquetas) || labelForSlug(deriveTramiteSlug(doc.titulo)) || '-'}</div>
+                    </td>
                     <td className="px-3 py-2">{(doc.tamano/1024).toFixed(1)} KB</td>
                     <td className="px-3 py-2">{doc.descargas || 0}</td>
                     <td className="px-3 py-2">
@@ -160,7 +231,7 @@ function DocumentosAdmin() {
                 ))}
                 {docs.length === 0 && !loading && (
                   <tr>
-                    <td className="px-3 py-6 text-center text-gray-500" colSpan={7}>No hay documentos cargados</td>
+                    <td className="px-3 py-6 text-center text-gray-500" colSpan={8}>No hay documentos cargados</td>
                   </tr>
                 )}
               </tbody>
@@ -173,4 +244,3 @@ function DocumentosAdmin() {
 }
 
 export default DocumentosAdmin;
-

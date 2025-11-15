@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, GraduationCap, Award, BookOpen, History, ChevronRight, ChevronLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { Button } from '../components/ui';
+import api, { API_BASE } from '../config/api';
 
 const tramites = [
   {
@@ -77,6 +79,8 @@ function Tramites() {
   const [documentoSeleccionado, setDocumentoSeleccionado] = useState(null);
   const [formularioData, setFormularioData] = useState({});
   const [errores, setErrores] = useState({});
+  const [formularios, setFormularios] = useState([]);
+  const [loadingFormularios, setLoadingFormularios] = useState(false);
 
   const tramitesFiltrados = tramites.filter(t =>
     t.nombre.toLowerCase().includes(busqueda.toLowerCase())
@@ -115,29 +119,74 @@ function Tramites() {
     setErrores({});
   };
 
+  useEffect(() => {
+    const fetchFormularios = async () => {
+      setLoadingFormularios(true);
+      try {
+        const res = await api.get('/documentos');
+        setFormularios(Array.isArray(res.data) ? res.data : []);
+      } catch (e) {
+        console.error('Error cargando formularios:', e);
+        setFormularios([]);
+      } finally {
+        setLoadingFormularios(false);
+      }
+    };
+    fetchFormularios();
+  }, []);
+
+  const normalizar = (s = '') => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const slugify = (s = '') => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  const getFormularioParaTramite = (tramite) => {
+    if (!tramite) return null;
+    const name = normalizar(tramite.nombre);
+    const slug = slugify(tramite.nombre).replace(/de-/,'').replace(/-/g,'-');
+    const posibles = formularios.filter(d => {
+      const t = normalizar(d.titulo || '');
+      const tags = Array.isArray(d.etiquetas) ? d.etiquetas.map(normalizar) : [];
+      const hasExact = Array.isArray(d.etiquetas) && d.etiquetas.some(x => String(x || '').toLowerCase() === `tramite:${slug}`);
+      if (hasExact) return true;
+      if (t.includes(name) || name.includes(t)) return true;
+      if (name.includes('certificado') && (t.includes('certificado') || tags.includes('certificado'))) return true;
+      if (name.includes('constancia') && (t.includes('constancia') || tags.includes('constancia'))) return true;
+      if (name.includes('duplicado') && (t.includes('duplicado') || tags.includes('duplicado'))) return true;
+      return false;
+    });
+    return posibles[0] || null;
+  };
+
   return (
-    <section className="max-w-6xl mx-auto px-6 py-12">
-      <h1 className="text-4xl font-bold text-blue-900 mb-8 text-center">Trámites y Solicitudes</h1>
-      
-      {/* Pestañas de navegación */}
-      <div className="flex justify-center mb-8">
-        <div className="bg-gray-100 rounded-lg p-1 flex">
+    <section className="max-w-6xl mx-auto px-6 py-10">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 border border-slate-800 p-6 mb-6 shadow-xl ring-1 ring-blue-300/30">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-emerald-500 to-indigo-600"></div>
+        <div className="flex items-center gap-3 text-white justify-center">
+          <FileText className="text-emerald-400" />
+          <h1 className="text-2xl md:text-3xl font-bold">Trámites y Solicitudes</h1>
+        </div>
+        <p className="text-slate-200 mt-2 text-center text-sm">Gestiona trámites académicos y solicita documentos oficiales del Instituto de Informática INFOUNA.</p>
+        <div className="mt-3 flex justify-center gap-2">
+          <span className="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full bg-emerald-500/90 text-white font-mono tracking-wider">INFO-ADMIN</span>
+        </div>
+      </div>
+
+      <div className="flex justify-center mb-6">
+        <div className="rounded-xl p-1 flex bg-blue-50 ring-1 ring-blue-200">
           <button
             onClick={() => { setSeccionActiva('general'); resetearFormulario(); }}
-            className={`px-6 py-3 rounded-md font-semibold transition-all ${
+            className={`px-5 py-2 rounded-lg font-semibold transition-all ${
               seccionActiva === 'general'
                 ? 'bg-blue-600 text-white shadow-md'
-                : 'text-blue-600 hover:bg-blue-50'
+                : 'text-blue-700 hover:bg-white'
             }`}
           >
             Trámites Generales
           </button>
           <button
             onClick={() => { setSeccionActiva('documentos'); resetearFormulario(); }}
-            className={`px-6 py-3 rounded-md font-semibold transition-all ${
+            className={`px-5 py-2 rounded-lg font-semibold transition-all ${
               seccionActiva === 'documentos'
                 ? 'bg-blue-600 text-white shadow-md'
-                : 'text-blue-600 hover:bg-blue-50'
+                : 'text-blue-700 hover:bg-white'
             }`}
           >
             Documentos Académicos
@@ -147,29 +196,34 @@ function Tramites() {
 
       {seccionActiva === 'general' && (
         <>
-          <div className="mb-6 flex flex-col md:flex-row gap-4 justify-center items-center">
+          <div className="mb-6 flex flex-col md:flex-row gap-3 justify-center items-center">
             <input
               type="text"
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
               placeholder="Buscar trámite..."
-              className="border border-gray-300 rounded px-4 py-2 text-blue-900 font-semibold w-full md:w-1/2"
+              className="border border-blue-200 rounded-xl px-4 py-2 text-blue-900 font-semibold w-full md:w-2/3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
             />
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4">
             {tramitesFiltrados.length === 0 ? (
               <div className="col-span-3 text-center text-gray-500 py-12">No se encontraron trámites.</div>
             ) : (
               tramitesFiltrados.map(tramite => (
-                <div key={tramite.id} className="border rounded-lg shadow p-6 flex flex-col bg-white">
-                  <h3 className="font-semibold text-lg mb-2 text-blue-800">{tramite.nombre}</h3>
-                  <p className="text-gray-700 mb-2">{tramite.descripcion}</p>
-                  <button
-                    className="mt-auto bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-800 transition"
+                <div key={tramite.id} className="rounded-xl ring-1 ring-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-white p-4 flex flex-col shadow-sm hover:shadow-md transition">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="text-blue-700 w-4 h-4" />
+                    <h3 className="font-semibold text-base text-blue-900">{tramite.nombre}</h3>
+                  </div>
+                  <p className="text-gray-700 text-sm mb-3">{tramite.descripcion}</p>
+                  <Button
+                    className="mt-auto"
+                    variant="primary"
+                    size="sm"
                     onClick={() => setTramiteSeleccionado(tramite)}
                   >
                     Ver requisitos
-                  </button>
+                  </Button>
                 </div>
               ))
             )}
@@ -177,7 +231,7 @@ function Tramites() {
           {/* Modal de requisitos */}
           {tramiteSeleccionado && (
             <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full relative">
+              <div className="bg-white rounded-lg shadow-lg p-6 md:p-8 max-w-2xl w-full relative">
                 <button
                   className="absolute top-2 right-2 text-gray-500 hover:text-blue-700 text-2xl"
                   onClick={() => setTramiteSeleccionado(null)}
@@ -185,22 +239,41 @@ function Tramites() {
                 >
                   ×
                 </button>
-                <h2 className="text-xl font-bold text-blue-900 mb-4">{tramiteSeleccionado.nombre}</h2>
-                <p className="mb-2 text-gray-700">{tramiteSeleccionado.descripcion}</p>
+                <h2 className="text-xl font-bold text-blue-900 mb-2">{tramiteSeleccionado.nombre}</h2>
+                <p className="mb-3 text-gray-700 text-sm">{tramiteSeleccionado.descripcion}</p>
                 <h4 className="font-semibold mb-2">Requisitos:</h4>
                 <ul className="list-disc list-inside mb-4">
                   {tramiteSeleccionado.requisitos.map((req, idx) => (
                     <li key={idx}>{req}</li>
                   ))}
                 </ul>
-                <a
-                  href={tramiteSeleccionado.link}
-                  className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Descargar formulario
-                </a>
+                {(() => {
+                  const doc = getFormularioParaTramite(tramiteSeleccionado);
+                  if (loadingFormularios) {
+                    return <div className="text-gray-500 text-sm">Cargando formularios...</div>;
+                  }
+                  if (doc) {
+                    return (
+                      <div className="mt-3">
+                        <div className="rounded-lg border border-gray-200 overflow-hidden mb-3" style={{ height: 360 }}>
+                          <iframe title={`Vista previa: ${doc.titulo}`} src={`${API_BASE}/documentos/${doc.id}/preview`} className="w-full h-full" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-gray-600">Tipo: {doc.mime} • Tamaño: {(doc.tamano/1024).toFixed(1)} KB</div>
+                          <div className="flex gap-2">
+                            <a href={`${API_BASE}/documentos/${doc.id}/preview`} target="_blank" rel="noreferrer" className="inline-block bg-gray-100 text-blue-700 px-3 py-1.5 rounded border border-gray-200">Abrir en nueva pestaña</a>
+                            <a href={`${API_BASE}/documentos/${doc.id}/download`} target="_blank" rel="noreferrer" className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Descargar</a>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="mt-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                      No encontramos un formulario cargado para este trámite. Puedes subirlo desde el panel de administración en Documentos (categoría "Formularios").
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -268,14 +341,15 @@ function Tramites() {
                 </button>
               </div>
               <div className="flex justify-end">
-                <button
+                <Button
                   onClick={() => setPasoActual(2)}
                   disabled={!curriculaSeleccionada}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
+                  variant="primary"
+                  size="md"
+                  rightIcon={ChevronRight}
                 >
                   Continuar
-                  <ChevronRight className="ml-2 w-5 h-5" />
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -284,13 +358,15 @@ function Tramites() {
           {pasoActual === 2 && (
             <div>
               <div className="flex items-center mb-6">
-                <button
+                <Button
                   onClick={() => setPasoActual(1)}
-                  className="text-blue-600 hover:text-blue-800 flex items-center mr-4"
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={ChevronLeft}
+                  className="text-blue-600 hover:text-blue-800 mr-4"
                 >
-                  <ChevronLeft className="w-5 h-5 mr-1" />
                   Volver
-                </button>
+                </Button>
                 <h2 className="text-2xl font-bold text-blue-900">Selecciona el Tipo de Documento</h2>
               </div>
               
@@ -322,14 +398,15 @@ function Tramites() {
               </div>
               
               <div className="flex justify-end">
-                <button
+                <Button
                   onClick={() => setPasoActual(3)}
                   disabled={!documentoSeleccionado}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center"
+                  variant="primary"
+                  size="md"
+                  rightIcon={ChevronRight}
                 >
                   Continuar
-                  <ChevronRight className="ml-2 w-5 h-5" />
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -338,13 +415,15 @@ function Tramites() {
           {pasoActual === 3 && (
             <div>
               <div className="flex items-center mb-6">
-                <button
+                <Button
                   onClick={() => setPasoActual(2)}
-                  className="text-blue-600 hover:text-blue-800 flex items-center mr-4"
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={ChevronLeft}
+                  className="text-blue-600 hover:text-blue-800 mr-4"
                 >
-                  <ChevronLeft className="w-5 h-5 mr-1" />
                   Volver
-                </button>
+                </Button>
                 <h2 className="text-2xl font-bold text-blue-900">Completar Solicitud</h2>
               </div>
 
@@ -508,26 +587,26 @@ function Tramites() {
                 </div>
 
                 <div className="flex justify-end space-x-4 pt-6">
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={resetearFormulario}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                   >
                     Cancelar
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="primary"
+                    leftIcon={CheckCircle}
                     onClick={() => {
                       if (validarFormulario()) {
                         alert('Solicitud enviada correctamente. Recibirás un email de confirmación.');
                         resetearFormulario();
                       }
                     }}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
                   >
-                    <CheckCircle className="w-5 h-5 mr-2" />
                     Enviar Solicitud
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle, AlertCircle, FileText, CreditCard, ExternalLink, Upload, User, Phone, Mail } from 'lucide-react';
+import { Button } from '../components/ui';
 
 function Matricula() {
   const [formData, setFormData] = useState({
@@ -388,35 +389,30 @@ function Matricula() {
 
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8 pt-6 border-t">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={prevStep}
                 disabled={step === 1}
-                className={`px-6 py-2 rounded-lg font-medium ${
-                  step === 1
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gray-500 text-white hover:bg-gray-600'
-                }`}
               >
                 Anterior
-              </button>
-              
+              </Button>
               <div className="flex space-x-4">
                 {step < 3 ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
                     onClick={nextStep}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
                   >
                     Siguiente
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
                     type="submit"
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+                    variant="success"
                   >
                     Enviar Solicitud
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -429,13 +425,15 @@ function Matricula() {
           <p className="mb-4">
             Una vez completado y verificado su pago, podrá acceder al portal oficial de matrículas para finalizar su inscripción.
           </p>
-          <button
+          <Button
+            variant="outline"
+            size="md"
+            className="bg-white text-blue-900 hover:bg-gray-100"
             onClick={redirectToMatriculas}
-            className="bg-white text-blue-900 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition flex items-center"
+            rightIcon={ExternalLink}
           >
-            <ExternalLink className="mr-2" size={16} />
             Ir al Portal de Matrículas
-          </button>
+          </Button>
           <p className="text-sm mt-2 opacity-90">
             Portal: matriculas.infouna.unap.edu.pe
           </p>

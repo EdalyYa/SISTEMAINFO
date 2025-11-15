@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import NewsAPIService from '../services/NewsAPIService';
+import { Button } from '@/components/ui';
 
-function BlogNoticias() {
+function BlogNoticias({ compact = false }) {
   const [noticias, setNoticias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
@@ -10,14 +11,14 @@ function BlogNoticias() {
     const loadTechNews = async () => {
       try {
         setLoading(true);
-        const news = await NewsAPIService.fetchTechNews(null, 6);
-        // Asegurar que solo se muestren 6 ítems como máximo
-        setNoticias(Array.isArray(news) ? news.slice(0, 6) : []);
+        const maxItems = compact ? 4 : 6;
+        const news = await NewsAPIService.fetchTechNews(null, maxItems);
+        setNoticias(Array.isArray(news) ? news.slice(0, maxItems) : []);
         setLastUpdate(new Date());
       } catch (error) {
         console.error('Error loading tech news:', error);
-        // Usar noticias de respaldo
-        setNoticias(NewsAPIService.getFallbackNews().slice(0, 6));
+        const maxItems = compact ? 4 : 6;
+        setNoticias(NewsAPIService.getFallbackNews().slice(0, maxItems));
         setLastUpdate(new Date());
       } finally {
         setLoading(false);
@@ -46,7 +47,7 @@ function BlogNoticias() {
     });
   };
 
-  const truncateText = (text, maxLength = 120) => {
+  const truncateText = (text, maxLength = 110) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength).trim() + '...';
   };
@@ -102,48 +103,42 @@ function BlogNoticias() {
 
   if (loading) {
     return (
-      <section className="bg-gray-50 py-12 px-6">
+      <section className={compact ? "bg-gray-50 py-4 px-3" : "bg-gray-50 py-6 px-4"}>
         <div className="max-w-7xl mx-auto">
-          {/* Header estilo periódico */}
-          <div className="text-center mb-10 border-b border-gray-200 pb-6">
-            <div className="flex items-center justify-center mb-4">
-              <div className="h-px bg-gray-300 flex-1"></div>
-              <h2 className="text-3xl font-bold text-gray-900 mx-6 font-serif">Noticias Tecnológicas</h2>
-              <div className="h-px bg-gray-300 flex-1"></div>
+          {!compact && (
+            <div className="text-center mb-6 border-b border-gray-200 pb-4">
+              <div className="flex items-center justify-center mb-4">
+                <div className="h-px bg-gray-300 flex-1"></div>
+                <h2 className="text-2xl font-bold text-gray-900 mx-6 font-serif">Noticias Tecnológicas</h2>
+                <div className="h-px bg-gray-300 flex-1"></div>
+              </div>
+              <p className="text-gray-600 text-sm max-w-3xl mx-auto font-light">Cargando las últimas noticias del mundo tecnológico...</p>
             </div>
-            <p className="text-gray-600 text-base max-w-3xl mx-auto font-light">
-              Cargando las últimas noticias del mundo tecnológico...
-            </p>
-          </div>
+          )}
           
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
+        <div className={compact ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
+          {[...Array(compact ? 4 : 6)].map((_, i) => (
             <div key={i} className="bg-white border border-gray-200 animate-pulse">
-              {/* Imagen skeleton */}
-              <div className="h-56 bg-gradient-to-br from-gray-200 to-gray-300"></div>
+              <div className={compact ? "h-36 bg-gradient-to-br from-gray-200 to-gray-300" : "h-40 bg-gradient-to-br from-gray-200 to-gray-300"}></div>
                 
-                <div className="p-6">
-                  {/* Fecha y fuente skeleton */}
-                  <div className="flex items-center justify-between mb-4">
+                <div className={compact ? "p-3" : "p-4"}>
+                  <div className={compact ? "flex items-center justify-between mb-3" : "flex items-center justify-between mb-4"}>
                     <div className="h-3 bg-gray-200 rounded w-20"></div>
                     <div className="h-3 bg-gray-200 rounded w-24"></div>
                   </div>
 
-                  {/* Título skeleton */}
-                  <div className="space-y-2 mb-4">
+                  <div className={compact ? "space-y-2 mb-2" : "space-y-2 mb-3"}>
                     <div className="h-5 bg-gray-200 rounded"></div>
                     <div className="h-5 bg-gray-200 rounded w-4/5"></div>
                   </div>
 
-                  {/* Descripción skeleton */}
-                  <div className="space-y-2 mb-6">
+                  <div className={compact ? "space-y-2 mb-3" : "space-y-2 mb-4"}>
                     <div className="h-4 bg-gray-200 rounded"></div>
                     <div className="h-4 bg-gray-200 rounded"></div>
                     <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                   </div>
 
-                  {/* Footer skeleton */}
-                  <div className="border-t border-gray-100 pt-4">
+                  <div className="border-t border-gray-100 pt-3">
                     <div className="flex items-center justify-between">
                       <div className="h-3 bg-gray-200 rounded w-16"></div>
                       <div className="h-3 bg-gray-200 rounded w-24"></div>
@@ -158,50 +153,67 @@ function BlogNoticias() {
     );
   }
 
+  const itemsCompact = compact ? (noticias.slice(0, 4)) : (noticias.slice(0, 6));
+  let itemsToRender = itemsCompact;
+  if (compact && itemsCompact.length < 4) {
+    const fallback = NewsAPIService.getFallbackNews();
+    const needed = 4 - itemsCompact.length;
+    itemsToRender = itemsCompact.concat(fallback.slice(0, needed));
+  }
+
   return (
-    <section className="bg-gray-50 py-12 px-6">
+    <section className={compact ? "bg-gray-50 py-4 px-3" : "bg-gray-50 py-12 px-6"}>
       <div className="max-w-7xl mx-auto">
-        {/* Header estilo periódico */}
-        <div className="text-center mb-10 border-b border-gray-200 pb-6">
-          <div className="flex items-center justify-center mb-4">
-            <div className="h-px bg-gray-300 flex-1"></div>
-            <h2 className="text-3xl font-bold text-gray-900 mx-6 font-serif">Noticias Tecnológicas</h2>
-            <div className="h-px bg-gray-300 flex-1"></div>
+        {!compact && (
+          <div className="text-center mb-10 border-b border-gray-200 pb-6">
+            <div className="flex items-center justify-center mb-4">
+              <div className="h-px bg-gray-300 flex-1"></div>
+              <h2 className="text-3xl font-bold text-gray-900 mx-6 font-serif">Noticias Tecnológicas</h2>
+              <div className="h-px bg-gray-300 flex-1"></div>
+            </div>
+            <p className="text-gray-600 text-base max-w-3xl mx-auto font-light">Últimas noticias del mundo tecnológico • Actualizado diariamente • Fuentes verificadas</p>
+            <div className="flex items-center justify-center mt-3 text-sm text-gray-500">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {lastUpdate ? (
+                <>
+                  Última actualización: {lastUpdate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} a las {lastUpdate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                </>
+              ) : (
+                'Cargando información de actualización...'
+              )}
+            </div>
           </div>
-          <p className="text-gray-600 text-base max-w-3xl mx-auto font-light">
-            Últimas noticias del mundo tecnológico • Actualizado diariamente • Fuentes verificadas
-          </p>
-          <div className="flex items-center justify-center mt-3 text-sm text-gray-500">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {lastUpdate ? (
-              <>
-                Última actualización: {lastUpdate.toLocaleDateString('es-ES', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })} a las {lastUpdate.toLocaleTimeString('es-ES', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </>
-            ) : (
-              'Cargando información de actualización...'
-            )}
+        )}
+        {compact && (
+          <div className="text-center mb-4 border-b border-gray-200 pb-3">
+            <h2 className="text-xl font-bold text-gray-900 font-serif">Noticias Tecnológicas</h2>
+            <p className="text-gray-600 text-xs max-w-2xl mx-auto">Últimas noticias del mundo tecnológico • Actualizado diariamente • Fuentes verificadas</p>
+            <div className="flex items-center justify-center mt-2 text-[11px] text-gray-500">
+              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {lastUpdate ? (
+                <>
+                  Última actualización: {lastUpdate.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })} {lastUpdate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                </>
+              ) : (
+                'Actualizando...'
+              )}
+            </div>
           </div>
-        </div>
+        )}
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {noticias.slice(0, 6).map((noticia, i) => (
+        <div className={compact ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"}>
+          {itemsToRender.map((noticia, i) => (
             <article 
               key={(noticia.url && noticia.url !== '#') ? noticia.url : `${noticia.id || noticia.title || 'news'}-${i}`} 
               className="bg-white border border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer group"
               onClick={() => handleNewsClick(noticia.url)}
             >
               {/* Imagen de la noticia */}
-              <div className="relative h-56 overflow-hidden bg-gradient-to-br from-blue-100 to-indigo-100">
+              <div className={compact ? "relative h-32 overflow-hidden bg-gradient-to-br from-blue-100 to-indigo-100" : "relative h-56 overflow-hidden bg-gradient-to-br from-blue-100 to-indigo-100"}>
                 {noticia.imageUrl && noticia.imageUrl !== '#' ? (
                   <img 
                     src={noticia.imageUrl} 
@@ -231,8 +243,8 @@ function BlogNoticias() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 
                 {/* Badge de categoría sobre la imagen */}
-                <div className="absolute top-4 left-4">
-                  <span className="inline-flex items-center px-3 py-1 rounded-sm text-xs font-bold bg-white/90 backdrop-blur-sm text-gray-900 shadow-sm">
+                <div className="absolute top-3 left-3">
+                  <span className={compact ? "inline-flex items-center px-2 py-0.5 rounded-sm text-[10px] font-bold bg-white/90 backdrop-blur-sm text-gray-900 shadow-sm" : "inline-flex items-center px-3 py-1 rounded-sm text-xs font-bold bg-white/90 backdrop-blur-sm text-gray-900 shadow-sm"}>
                     <span className="mr-1">{getCategoryIcon(noticia.category)}</span>
                     {getCategoryName(noticia.category).toUpperCase()}
                   </span>
@@ -240,8 +252,8 @@ function BlogNoticias() {
 
                 {/* Indicador de noticia reciente */}
                 {isRecentNews(noticia.publishedAt) && (
-                  <div className="absolute top-4 right-4">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-500 text-white shadow-sm animate-pulse">
+                  <div className={compact ? "absolute top-3 right-3" : "absolute top-4 right-4"}>
+                    <span className={compact ? "inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white shadow-sm animate-pulse" : "inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-red-500 text-white shadow-sm animate-pulse"}>
                       <span className="w-2 h-2 bg-white rounded-full mr-1"></span>
                       NUEVO
                     </span>
@@ -249,9 +261,9 @@ function BlogNoticias() {
                 )}
               </div>
               
-              <div className="p-6">
+              <div className={compact ? "p-3" : "p-6"}>
                 {/* Fecha y fuente estilo periódico */}
-                <div className="flex items-center justify-between mb-4 text-xs text-gray-500 uppercase tracking-wide">
+                <div className={compact ? "flex items-center justify-between mb-3 text-[11px] text-gray-500 uppercase tracking-wide" : "flex items-center justify-between mb-4 text-xs text-gray-500 uppercase tracking-wide"}>
                   <time className="font-medium">
                     {new Date(noticia.publishedAt).toLocaleDateString('es-ES', {
                       day: 'numeric',
@@ -268,17 +280,17 @@ function BlogNoticias() {
                 </div>
 
                 {/* Título estilo periódico */}
-                <h3 className="font-bold text-xl mb-4 text-gray-900 leading-tight group-hover:text-blue-700 transition-colors duration-200 font-serif line-clamp-3">
+                <h3 className={compact ? "font-bold text-sm mb-2 text-gray-900 leading-tight group-hover:text-blue-700 transition-colors duration-200 font-serif line-clamp-2" : "font-bold text-lg mb-3 text-gray-900 leading-tight group-hover:text-blue-700 transition-colors duration-200 font-serif line-clamp-2"}>
                   {noticia.title}
                 </h3>
 
                 {/* Descripción */}
-                <p className="text-gray-700 text-base mb-6 leading-relaxed line-clamp-4">
+                <p className={compact ? "text-gray-700 text-[11px] mb-2 leading-relaxed line-clamp-2" : "text-gray-700 text-sm mb-3 leading-relaxed line-clamp-3"}>
                   {truncateText(noticia.description, 150)}
                 </p>
 
                 {/* Separador */}
-                <div className="border-t border-gray-100 pt-4">
+                <div className={compact ? "border-t border-gray-100 pt-3" : "border-t border-gray-100 pt-4"}>
                   {/* Cursos relacionados */}
                   {noticia.relatedCourses && noticia.relatedCourses.length > 0 && (
                     <div className="mb-4">
@@ -305,20 +317,19 @@ function BlogNoticias() {
                   )}
 
                   {/* Botón de leer más */}
-                  <div className="flex items-center justify-between">
+                  <div className={compact ? "flex items-center justify-between" : "flex items-center justify-between"}>
                     <span className="text-xs text-gray-500">
                       Hace {Math.max(0, Math.floor((Date.now() - new Date(noticia.publishedAt)) / (1000 * 60 * 60 * 24)))} días
                     </span>
-                    <button 
-                      className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-semibold group-hover:underline transition-all duration-200"
+                    <Button 
+                      variant="outline" 
+                      size="xs"
+                      className="text-blue-700 border-blue-600 hover:bg-blue-50"
                       onClick={(e) => { e.stopPropagation(); handleNewsClick(noticia.url); }}
                       aria-label="Leer artículo completo"
                     >
-                      <span>Leer artículo completo</span>
-                      <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                    </button>
+                      Leer artículo completo
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -326,32 +337,17 @@ function BlogNoticias() {
           ))}
         </div>
 
-        {/* Footer con información adicional */}
-        <div className="mt-12 text-center border-t border-gray-200 pt-8">
-          <div className="bg-blue-50 rounded-lg p-6 max-w-4xl mx-auto">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
-              ¿Te interesan estas tecnologías?
-            </h3>
-            <p className="text-gray-700 mb-4 leading-relaxed">
-              Mantente a la vanguardia tecnológica con nuestros cursos especializados en INFOUNA. 
-              Desarrolla las habilidades que demanda el mercado actual.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                Ver Catálogo de Cursos
-              </button>
-              <button className="inline-flex items-center px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all duration-200 font-semibold">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                Solicitar Información
-              </button>
+        {!compact && (
+          <div className="mt-6 text-center border-t border-gray-200 pt-4">
+            <div className="bg-blue-50 rounded-lg p-4 max-w-3xl mx-auto">
+              <p className="text-gray-700 text-sm mb-3">¿Te interesan estas tecnologías? Explora nuestros cursos INFOUNA.</p>
+              <div className="flex gap-2 justify-center">
+                <Button variant="primary" size="xs">Ver Catálogo</Button>
+                <Button variant="outline" size="xs">Solicitar Información</Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

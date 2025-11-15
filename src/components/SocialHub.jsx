@@ -158,11 +158,9 @@ export default function SocialHub() {
   const waQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(LINKS.whatsapp)}`;
 
   return (
-    <section className="bg-white py-10 px-6">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-2xl font-bold text-blue-900 mb-2 text-center">Redes Sociales</h2>
-        <p className="text-gray-600 text-sm mb-6 text-center">Síguenos para noticias, cursos y eventos del Instituto de Informática INFOUNA.</p>
-        <div className="flex gap-3 mb-8 justify-center">
+    <section className="bg-white py-3 px-4">
+      <div className="max-w-6xl mx-auto">
+      <div className="flex gap-2 mb-3 justify-center">
           <a href={LINKS.facebook} target="_blank" rel="noreferrer" aria-label="Facebook INFOUNA" className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition">
             <Icon name="facebook" />
           </a>
@@ -177,15 +175,14 @@ export default function SocialHub() {
           </a>
         </div>
 
-        {/* Grid de previews (Facebook, YouTube, TikTok, WhatsApp) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
           {/* Facebook */}
-          <div className="rounded-xl overflow-hidden shadow-lg border border-blue-100">
+          <div className="rounded-xl overflow-hidden shadow-sm border border-blue-100">
             <iframe
               title="Facebook Page Plugin INFOUNA"
               src={fbPluginUrl}
               width="100%"
-              height="400"
+              height="240"
               style={{ border: 'none', overflow: 'hidden' }}
               scrolling="no"
               frameBorder="0"
@@ -195,20 +192,20 @@ export default function SocialHub() {
           </div>
 
           {/* YouTube (playlist de uploads del canal) */}
-          <div className="rounded-xl overflow-hidden shadow-lg border border-blue-100">
+          <div className="rounded-xl overflow-hidden shadow-sm border border-blue-100">
             {ytEmbedUrl ? (
               <iframe
                 title="YouTube Canal Preview"
                 src={ytEmbedUrl}
                 width="100%"
-                height="400"
+                height="240"
                 style={{ border: 'none' }}
                 loading="lazy"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               ></iframe>
             ) : (
-              <div className="h-[400px] flex flex-col items-center justify-center bg-white">
+              <div className="h-[240px] flex flex-col items-center justify-center bg-white">
                 <Icon name="youtube" className="w-10 h-10 text-red-600" />
                 <p className="mt-2 text-gray-600 text-sm">No se pudo cargar la vista previa del canal.</p>
                 <a
@@ -223,17 +220,17 @@ export default function SocialHub() {
             )}
           </div>
 
-          <div ref={ttContainerRef} className="rounded-xl overflow-hidden shadow-lg border border-blue-100 p-2 min-h-[400px]">
+          <div ref={ttContainerRef} className="rounded-xl overflow-hidden shadow-sm border border-blue-100 p-2 min-h-[240px]">
             {(TIKTOK_MODE === 'card' || ttError || !ttLatest) ? (
               <div className="p-2">
                 {ttLatest?.cover ? (
                   <a href={ttLatest.url} target="_blank" rel="noreferrer" className="block">
-                    <img src={ttLatest.cover} alt="Último video" className="w-full h-56 object-cover rounded" />
+                    <img src={ttLatest.cover} alt="Último video" className="w-full h-40 object-cover rounded" />
                   </a>
                 ) : (
-                  <div className="w-full h-56 rounded bg-gray-100 flex items-center justify-center text-gray-500">TikTok</div>
+                  <div className="w-full h-40 rounded bg-gray-100 flex items-center justify-center text-gray-500">TikTok</div>
                 )}
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-2 flex items-center gap-2">
                   <a href={(ttLatest && ttLatest.url) || LINKS.tiktok} target="_blank" rel="noreferrer" className="px-3 py-2 bg-black text-white rounded-lg">Ver en TikTok</a>
                   <a href={LINKS.tiktok} target="_blank" rel="noreferrer" className="px-3 py-2 bg-gray-100 text-gray-800 rounded-lg">Perfil</a>
                 </div>
@@ -243,7 +240,7 @@ export default function SocialHub() {
                 title="TikTok último video"
                 src={`https://www.tiktok.com/embed/v2/${ttLatest.id}?lang=es-ES`}
                 width="100%"
-                height="400"
+                height="240"
                 style={{ border: 'none' }}
                 loading="lazy"
                 allow="autoplay; encrypted-media; picture-in-picture"
@@ -254,15 +251,15 @@ export default function SocialHub() {
           </div>
 
           {/* WhatsApp (CTA + QR) */}
-          <div className="rounded-xl overflow-hidden shadow-lg border border-blue-100 p-4 bg-green-50">
-            <h3 className="text-green-800 font-semibold mb-2">WhatsApp INFOUNA</h3>
-            <p className="text-sm text-green-700 mb-3">Escríbenos para consultas de matrícula y cursos.</p>
+          <div className="rounded-xl overflow-hidden shadow-sm border border-blue-100 p-3 bg-green-50">
+            <h3 className="text-green-800 font-semibold mb-1">WhatsApp INFOUNA</h3>
+            <p className="text-xs text-green-700 mb-2">Escríbenos para consultas de matrícula y cursos.</p>
             <a href={LINKS.whatsapp} target="_blank" rel="noreferrer" className="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700">
               <span className="mr-2">Abrir WhatsApp</span>
             </a>
-            <div className="mt-4 flex items-center gap-3">
-              <img src={waQrUrl} alt="QR WhatsApp INFOUNA" className="w-24 h-24 border border-green-200 rounded" />
-              <div className="text-xs text-green-700">Escanea el QR o usa el botón para iniciar chat.</div>
+            <div className="mt-2 flex items-center gap-2">
+              <img src={waQrUrl} alt="QR WhatsApp INFOUNA" className="w-20 h-20 border border-green-200 rounded" />
+              <div className="text-xs text-green-700">Escanea el QR o usa el botón.</div>
             </div>
           </div>
         </div>

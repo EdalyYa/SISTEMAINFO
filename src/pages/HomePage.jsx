@@ -21,8 +21,10 @@ import WhatsAppButton from "../components/WhatsAppButton";
 // import CursosLibres from "../components/CursosLibres"; // Removido del Home en favor de dos carruseles
 import videoFile from "../videos/Video.mp4";
 import SocialHub from "../components/SocialHub";
+import { FaMicrochip } from 'react-icons/fa';
 import ImageOptimized from "../components/ImageOptimized";
 import edificioInfouna from '../Imagenes/edificio-infouna.jpg';
+import { Button } from '../components/ui';
 
 function HomePage() {
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -118,33 +120,28 @@ function HomePage() {
           </p>
           {/* Badge llamativo de Inscripciones abiertas */}
           <div className="mb-2 md:mb-3 flex items-center gap-3" role="status" aria-live="polite">
-            <button
+            <Button
               onClick={handleJoinINFOUNA}
-              className="inline-flex items-center px-3 md:px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs md:text-sm font-semibold shadow-lg ring-2 ring-white/40 hover:scale-105 transition animate-pulse"
+              size="sm"
+              variant="success"
+              className="inline-flex px-3 md:px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-semibold shadow-lg ring-2 ring-white/40 hover:scale-105 transition animate-pulse"
               aria-label="Inscripciones abiertas, ir a matrícula"
             >
-              <svg className="w-4 h-4 md:w-5 md:h-5 mr-1.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.974a1 1 0 00.95.69h4.18c.969 0 1.371 1.24.588 1.81l-3.388 2.462a1 1 0 00-.364 1.118l1.287 3.974c.3.922-.755 1.688-1.54 1.118l-3.388-2.462a1 1 0 00-1.175 0l-3.388 2.462c-.784.57-1.838-.196-1.539-1.118l1.287-3.974a1 1 0 00-.364-.118L2.045 9.4c-.783-.57-.38-1.81.588-1.81h4.18a1 1 0 00.95-.69l1.286-3.974z"/></svg>
-              <span>Inscripciones abiertas</span>
-            </button>
+              Inscripciones abiertas
+            </Button>
             <span className="text-emerald-200 text-xs md:text-sm font-medium">Cupos limitados</span>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 md:gap-6 w-full max-w-4xl">
-            <button onClick={handleJoinINFOUNA} className="bg-blue-700 text-white px-6 md:px-8 py-3 md:py-4 rounded-lg shadow-lg hover:bg-blue-600 hover:scale-105 transition duration-300 font-semibold uppercase tracking-wide flex items-center justify-center space-x-2 md:space-x-3 animate-fade-in text-sm md:text-base">
-              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-              <span>Únete a INFOUNA</span>
-            </button>
-            <button onClick={handleExploreCourses} className="bg-yellow-400 text-black px-6 md:px-8 py-3 md:py-4 rounded-lg shadow-lg hover:bg-yellow-300 hover:scale-105 transition duration-300 font-semibold uppercase tracking-wide flex items-center justify-center space-x-2 md:space-x-3 animate-fade-in text-sm md:text-base">
-              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v8m4-4H8" /></svg>
-              <span>Explora cursos INFOUNA</span>
-            </button>
-            <button
+            <Button onClick={handleJoinINFOUNA} variant="primary" size="lg" className="px-6 md:px-8 py-3 md:py-4 shadow-lg hover:scale-105 transition duration-300 font-semibold uppercase tracking-wide animate-fade-in text-sm md:text-base">Únete a INFOUNA</Button>
+            <Button onClick={handleExploreCourses} variant="warning" size="lg" className="px-6 md:px-8 py-3 md:py-4 shadow-lg hover:scale-105 transition duration-300 font-semibold uppercase tracking-wide animate-fade-in text-sm md:text-base">Explora cursos INFOUNA</Button>
+            <Button
               onClick={() => setModalOpen(true)}
-              className="bg-white/80 text-blue-900 px-4 md:px-6 py-3 rounded-lg shadow hover:bg-white font-semibold transition animate-fade-in text-sm md:text-base flex items-center justify-center space-x-2"
+              variant="outline"
+              size="md"
+              className="bg-white/80 text-blue-900 px-4 md:px-6 py-3 rounded-lg shadow hover:bg-white font-semibold animate-fade-in"
             >
-              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0020 7.382V6.618a1 1 0 00-.447-.842L15 3.5M9 21V3.5m0 0L4.447 5.776A1 1 0 004 6.618v.764a1 1 0 00.447.842L9 10m0 11l4.553-2.276A1 1 0 0014 18.618v-.764a1 1 0 00-.447-.842L9 14" /></svg>
-              <span className="hidden sm:inline">Ver video institucional</span>
-              <span className="sm:hidden">Video</span>
-            </button>
+              Ver video institucional
+            </Button>
           </div>
         </div>
         <ScrollDownIndicator />
@@ -225,29 +222,37 @@ function HomePage() {
       {/* Servicios y beneficios movidos a la sección anterior */}
 
       {/* Laboratorios modernos INFOUNA */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 py-8 md:py-10 px-4 md:px-6 text-white">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-3 md:mb-4">
-            Laboratorios de Última Generación
-          </h2>
-          <p className="text-sm md:text-base mb-4 md:mb-6 max-w-3xl mx-auto leading-relaxed">
-            La Universidad Nacional del Altiplano de Puno da un paso significativo hacia la modernización tecnológica con nuevos laboratorios de innovación, tecnología y conectividad Huawei.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-6 md:mt-8">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 hover:bg-white/20 transition duration-300">
-              <div className="text-2xl md:text-3xl mb-2 md:mb-3">🔬</div>
-              <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Laboratorios de Innovación</h3>
-              <p className="text-blue-100 text-xs md:text-sm">Espacios equipados con tecnología de vanguardia para proyectos innovadores</p>
+      <section className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-6 px-4 md:px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="relative rounded-3xl bg-blue-50 border border-blue-100 p-3 shadow-sm overflow-hidden text-center mb-3">
+            <div className="inline-flex items-center gap-2 px-2 py-1 bg-blue-50 text-blue-700 rounded-full ring-1 ring-blue-200 mb-1 font-mono">
+              <FaMicrochip className="w-4 h-4" />
+              <span className="text-xs font-semibold">INFO-LABS</span>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 hover:bg-white/20 transition duration-300">
-              <div className="text-2xl md:text-3xl mb-2 md:mb-3">💻</div>
-              <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Tecnología Avanzada</h3>
-              <p className="text-blue-100 text-xs md:text-sm">Equipos de última generación para formación práctica en sistemas informáticos</p>
+            <h2 className="text-2xl md:text-3xl font-bold mb-1 text-blue-900">Laboratorios de Última Generación</h2>
+            <p className="text-xs md:text-sm text-gray-700 max-w-2xl mx-auto font-mono">Modernización tecnológica con innovación, conectividad Huawei y formación práctica.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-3 text-center">
+              <div className="inline-flex items-center justify-center gap-2 mb-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-blue-600" aria-hidden="true"></span>
+                <h3 className="text-base font-bold text-blue-900">Laboratorios de Innovación</h3>
+              </div>
+              <p className="text-gray-700 text-xs">Espacios con tecnología de vanguardia para proyectos innovadores.</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 hover:bg-white/20 transition duration-300">
-              <div className="text-2xl md:text-3xl mb-2 md:mb-3">🌐</div>
-              <h3 className="text-base md:text-lg font-semibold mb-1 md:mb-2">Conectividad Total</h3>
-              <p className="text-blue-100 text-xs md:text-sm">Infraestructura de red moderna que garantiza conectividad óptima para el aprendizaje</p>
+            <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-3 text-center">
+              <div className="inline-flex items-center justify-center gap-2 mb-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-cyan-600" aria-hidden="true"></span>
+                <h3 className="text-base font-bold text-blue-900">Tecnología Avanzada</h3>
+              </div>
+              <p className="text-gray-700 text-xs">Equipos de última generación para práctica en sistemas.</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-3 text-center">
+              <div className="inline-flex items-center justify-center gap-2 mb-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-indigo-600" aria-hidden="true"></span>
+                <h3 className="text-base font-bold text-blue-900">Conectividad Total</h3>
+              </div>
+              <p className="text-gray-700 text-xs">Infraestructura de red moderna para aprendizaje óptimo.</p>
             </div>
           </div>
         </div>

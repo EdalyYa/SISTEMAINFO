@@ -24,39 +24,37 @@ function Equipo() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Compact Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-6 text-center">
-          <div className="inline-flex p-2 bg-blue-100 rounded-full mb-3">
-            <FaUsers className="w-6 h-6 text-blue-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Nuestro Equipo
-          </h1>
-          <p className="text-base text-gray-600">
-            Profesionales comprometidos con la excelencia educativa
-          </p>
-          <div className="mt-3 text-sm text-gray-500">
-            {teamMembers.length} miembros activos
+    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="relative mb-3">
+        <div className="mx-auto max-w-6xl">
+          <div className="relative rounded-3xl bg-blue-50 border border-blue-100 p-3 shadow-sm overflow-hidden">
+            <div className="relative text-center">
+              <div className="inline-flex items-center gap-2 px-2 py-1 bg-blue-50 text-blue-700 rounded-full ring-1 ring-blue-200 mb-1 font-mono">
+                <FaUsers className="w-4 h-4" />
+                <span className="text-xs font-semibold">INFO-TEAM</span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-bold mb-1 text-blue-900">Nuestro Equipo</h1>
+              <p className="text-xs md:text-sm text-gray-700 max-w-lg mx-auto font-mono">Profesionales comprometidos con la excelencia educativa</p>
+              <div className="mt-1 text-xs text-blue-700 font-mono">{teamMembers.length} miembros activos</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-4 py-4">
         {/* Team Members - Compact Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {teamMembers.map((member, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="p-5">
+            <div key={index} className="bg-white rounded-lg shadow-sm border border-blue-100 overflow-hidden hover:shadow-md transition-all duration-300">
+              <div className="p-3">
                 <div className="flex items-start space-x-4">
                   {/* Photo Section */}
                   <div className="flex-shrink-0">
-                    <div className="w-44 h-44 rounded-lg overflow-hidden border border-gray-300 shadow-sm">
+                    <div className="w-36 h-36 rounded-lg overflow-hidden border border-gray-300 shadow-sm">
                       <img 
                         src={member.photo} 
                         alt={member.name} 
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
+                        className="w-full h-full object-cover" 
                         style={{objectPosition: 'center 20%'}} 
                       />
                     </div>
@@ -64,11 +62,11 @@ function Equipo() {
                   
                   {/* Information Section */}
                   <div className="flex-1">
-                    <h2 className="text-lg font-bold text-gray-900 mb-1">
+                    <h2 className="text-base font-bold text-gray-900 mb-1">
                       {member.name}
                     </h2>
-                    <p className="text-blue-600 font-semibold text-sm mb-2">{member.role}</p>
-                    <p className="text-gray-600 text-xs leading-relaxed mb-3">{member.description}</p>
+                    <p className="text-blue-600 font-semibold text-xs mb-1">{member.role}</p>
+                    <p className="text-gray-600 text-xs line-clamp-2 mb-2">{member.description}</p>
                     
                     {/* Compact Credentials */}
                     <div className="flex flex-wrap gap-2 text-xs">
@@ -89,51 +87,52 @@ function Equipo() {
         </div>
 
         {/* Compact Values Section */}
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-5">
-          <div className="text-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-1">
-              Nuestros Principios
-            </h2>
-            <p className="text-gray-600 text-sm">Valores que guían nuestro compromiso educativo</p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+          <div className="text-center mb-2">
+            <div className="inline-flex items-center justify-center gap-2 mb-1">
+              <span className="inline-block w-2 h-2 rounded-full bg-blue-600" aria-hidden="true"></span>
+              <h2 className="text-xl font-bold text-blue-900">Nuestros Principios</h2>
+            </div>
+            <p className="text-gray-600 text-xs font-mono">Valores que guían nuestro compromiso educativo</p>
           </div>
           
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="text-center p-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+            <div className="text-center p-2.5">
               <div className="inline-flex p-2 bg-blue-50 rounded-lg mb-2">
                 <FaChalkboardTeacher className="w-5 h-5 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-sm mb-1">Docencia de Calidad</h3>
-              <p className="text-gray-600 text-xs leading-relaxed">
+              <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Docencia de Calidad</h3>
+              <p className="text-gray-600 text-xs">
                 Educación de excelencia
               </p>
             </div>
             
-            <div className="text-center p-3">
+            <div className="text-center p-2.5">
               <div className="inline-flex p-2 bg-green-50 rounded-lg mb-2">
                 <FaUsers className="w-5 h-5 text-green-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-sm mb-1">Trabajo Colaborativo</h3>
-              <p className="text-gray-600 text-xs leading-relaxed">
+              <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Trabajo Colaborativo</h3>
+              <p className="text-gray-600 text-xs">
                 Ambiente de cooperación
               </p>
             </div>
             
-            <div className="text-center p-3">
+            <div className="text-center p-2.5">
               <div className="inline-flex p-2 bg-yellow-50 rounded-lg mb-2">
                 <FaAward className="w-5 h-5 text-yellow-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-sm mb-1">Excelencia Académica</h3>
-              <p className="text-gray-600 text-xs leading-relaxed">
+              <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Excelencia Académica</h3>
+              <p className="text-gray-600 text-xs">
                 Altos estándares educativos
               </p>
             </div>
             
-            <div className="text-center p-3">
+            <div className="text-center p-2.5">
               <div className="inline-flex p-2 bg-purple-50 rounded-lg mb-2">
                 <FaHandsHelping className="w-5 h-5 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-sm mb-1">Apoyo Integral</h3>
-              <p className="text-gray-600 text-xs leading-relaxed">
+              <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Apoyo Integral</h3>
+              <p className="text-gray-600 text-xs">
                 Desarrollo estudiantil
               </p>
             </div>

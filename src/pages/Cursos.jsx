@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { API_BASE } from '../config/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
-import { FaFilter, FaSearch } from 'react-icons/fa';
+import { FaFilter, FaSearch, FaClock, FaUser, FaBookOpen, FaGraduationCap, FaMoneyBillWave, FaTimes, FaFacebookF, FaTiktok, FaWhatsapp, FaEnvelope, FaLink, FaMicrochip } from 'react-icons/fa';
 import infoLogo from '../logo.png';
+import { Button } from '../components/ui';
 
 // Datos estáticos como fallback
 const staticPrograms = [
@@ -167,6 +168,34 @@ function Cursos() {
   const [selectedModality, setSelectedModality] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('');
   const [selectedProgram, setSelectedProgram] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const buildWhatsAppUrl = (course) => {
+    const phone = '51970709787';
+    const msg = `Hola INFOUNA, me interesa el curso "${course?.name || ''}" del programa "${course?.program || ''}". ¿Podrían brindarme más información sobre fechas, modalidad y matrícula?`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+    return url;
+  };
+  const shareCourse = (course) => {
+    const url = window.location.origin + '/cursos';
+    const text = `Mira este curso: ${course?.name || ''} en INFOUNA`;
+    if (navigator.share) {
+      navigator.share({ title: course?.name || 'Curso INFOUNA', text, url }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(`${text} ${url}`).catch(() => {});
+    }
+  };
+  const getShareLinks = (course) => {
+    const baseUrl = window.location.origin + (course?.programId ? `/programas/${course.programId}` : '/cursos');
+    const text = `Curso: ${course?.name || ''} | Programa: ${course?.program || ''} \n ${baseUrl}`;
+    return {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(baseUrl)}&quote=${encodeURIComponent(text)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(text)}`,
+      email: `mailto:?subject=${encodeURIComponent(`Curso INFOUNA: ${course?.name || ''}`)}&body=${encodeURIComponent(text)}`,
+      tiktokCopy: `${text}`,
+    };
+  };
 
   // Utilidades para normalizar textos y unificar filtros
   const normalize = (val) => (val || '')
@@ -189,6 +218,12 @@ function Cursos() {
     if (n === 'intermedio') return 'Intermedio';
     if (n === 'avanzado') return 'Avanzado';
     return l || 'Nivel';
+  };
+
+  const formatPrice = (v) => {
+    const num = Number(v);
+    if (!num || num <= 0) return 'Consultar precio';
+    return `$${num.toFixed(2)}`;
   };
 
   const esNombreDeImagen = (v) => typeof v === 'string' && /\.(png|jpg|jpeg|gif|webp)$/i.test(v);
@@ -398,25 +433,30 @@ function Cursos() {
     <div className="bg-gray-50 py-4 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold text-blue-900 mb-1">Todos los Cursos</h1>
-          <p className="text-sm text-gray-600 max-w-2xl mx-auto">
-            Catálogo completo de cursos con opciones de filtrado y búsqueda para encontrar el curso perfecto.
-          </p>
+        <div className="relative rounded-xl mb-4 overflow-hidden bg-gradient-to-r from-white to-blue-50 border border-blue-100">
+          <div className="text-center px-4 py-3">
+            <div className="inline-flex items-center gap-2 mb-1">
+              <FaMicrochip className="text-blue-700" />
+              <h1 className="text-2xl font-bold text-blue-900">Todos los Cursos</h1>
+            </div>
+            <p className="text-sm text-gray-700 max-w-2xl mx-auto font-mono">
+              Catálogo completo de cursos con opciones de filtrado y búsqueda para encontrar el curso perfecto.
+            </p>
+          </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-lg border border-gray-100 p-2 mb-4">
+        <div className="bg-white rounded-lg border border-blue-100 p-2 mb-4">
           <div className="flex flex-col lg:flex-row gap-2 items-center">
             {/* Search Bar */}
             <div className="relative flex-1 w-full">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500" />
               <input
                 type="text"
                 placeholder="Buscar cursos, programas o instructores..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="w-full pl-10 pr-3 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm font-mono text-blue-900"
               />
             </div>
 
@@ -425,7 +465,7 @@ function Cursos() {
               <select
                 value={selectedModality}
                 onChange={(e) => setSelectedModality(e.target.value)}
-                className="px-2.5 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="px-2.5 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm font-mono text-blue-900"
               >
                 <option value="">Todas las modalidades</option>
                 {modalities.map(modality => (
@@ -436,7 +476,7 @@ function Cursos() {
               <select
                 value={selectedLevel}
                 onChange={(e) => setSelectedLevel(e.target.value)}
-                className="px-2.5 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="px-2.5 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm font-mono text-blue-900"
               >
                 <option value="">Todos los niveles</option>
                 {levels.map(level => (
@@ -447,7 +487,7 @@ function Cursos() {
               <select
                 value={selectedProgram}
                 onChange={(e) => setSelectedProgram(e.target.value)}
-                className="px-2.5 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="px-2.5 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm font-mono text-blue-900"
               >
                 <option value="">Todos los programas</option>
                 {programNames.map(program => (
@@ -457,7 +497,7 @@ function Cursos() {
 
               <button
                 onClick={clearFilters}
-                className="px-3 py-1.5 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center gap-1.5 text-sm"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-sm font-mono"
               >
                 <FaFilter />
                 Limpiar
@@ -482,29 +522,25 @@ function Cursos() {
             <p className="text-gray-500 mb-4">
               Intenta ajustar tus filtros o términos de búsqueda
             </p>
-            <button
-              onClick={clearFilters}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Ver todos los cursos
-            </button>
+            <Button variant="primary" size="md" onClick={clearFilters}>Ver todos los cursos</Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {filteredCourses.map((course, index) => (
-              <div key={`${course.programId}-${index}`} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="h-24 bg-gray-100">
-                  <img src={course.image || coursePlaceholder} alt={course.name} className="w-full h-full object-cover" />
+          {filteredCourses.map((course, index) => (
+              <div key={`${course.programId}-${index}`} className="rounded-xl border border-blue-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition">
+                <div className="h-1 bg-gradient-to-r from-blue-600 via-emerald-500 to-indigo-600"></div>
+                <div className="h-24 bg-gray-100 ring-1 ring-blue-100">
+                  <img src={course.image || infoLogo} alt={course.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="p-3">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-sm font-semibold text-gray-800 line-clamp-2">
+                    <h3 className="text-sm font-semibold text-blue-900 line-clamp-2">
                       {course.name}
                     </h3>
-                    <span className={`px-1.5 py-0.5 text-[11px] rounded-full ${
+                    <span className={`px-2 py-0.5 text-[11px] rounded-full font-mono ring-1 ${
                       course.modality === 'Virtual' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-blue-100 text-blue-800'
+                        ? 'bg-green-50 text-green-700 ring-green-200' 
+                        : 'bg-indigo-50 text-indigo-700 ring-indigo-200'
                     }`}>
                       {course.modality}
                     </span>
@@ -516,10 +552,10 @@ function Cursos() {
                     <p><strong>Duración:</strong> {course.duration}</p>
                     <p><strong>Horario:</strong> {course.schedule}</p>
                     <p><strong>Nivel:</strong> 
-                      <span className={`ml-2 px-1.5 py-0.5 text-[11px] rounded-full ${
-                        course.level === 'Básico' ? 'bg-green-100 text-green-800' :
-                        course.level === 'Intermedio' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
+                      <span className={`ml-2 px-2 py-0.5 text-[11px] rounded-full font-mono ring-1 ${
+                        course.level === 'Básico' ? 'bg-green-50 text-green-700 ring-green-200' :
+                        course.level === 'Intermedio' ? 'bg-amber-50 text-amber-700 ring-amber-200' :
+                        'bg-red-50 text-red-700 ring-red-200'
                       }`}>
                         {course.level}
                       </span>
@@ -527,19 +563,127 @@ function Cursos() {
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <div className="text-sm font-bold text-blue-600">
+                    <div className="text-sm font-bold text-blue-700 font-mono">
                       {course.price ? `$${course.price}` : 'Consultar precio'}
                     </div>
-                    <button className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm">
-                      Ver detalles
-                    </button>
+                    <Button variant="primary" size="sm" onClick={() => { setSelectedCourse(course); setIsModalOpen(true); }}>Ver detalles</Button>
                   </div>
                 </div>
               </div>
-            ))}
+          ))}
           </div>
         )}
       </div>
+
+      {isModalOpen && selectedCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+          <div className="relative bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden">
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-3 right-3 z-10 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/80 text-gray-700 hover:bg-white">
+              <FaTimes />
+            </button>
+            <div className="relative h-64 md:h-72 bg-gray-100">
+              {selectedCourse.image && (
+                <img src={selectedCourse.image} alt={selectedCourse.name} className="w-full h-full object-cover" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+              <div className="absolute bottom-4 left-4 right-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-white drop-shadow">{selectedCourse.name}</h2>
+                <p className="text-white/90 text-sm mt-1">{selectedCourse.program}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedCourse.modality && <span className="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full bg-indigo-500/90 text-white">{selectedCourse.modality}</span>}
+                  {selectedCourse.level && <span className="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full bg-emerald-500/90 text-white">{selectedCourse.level}</span>}
+                  <span className="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full bg-blue-600/90 text-white">Certificación INFOUNA</span>
+                  <span className="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full bg-yellow-500/90 text-white">Inicio: pronto</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              {selectedCourse.description && (
+                <p className="text-gray-700">{selectedCourse.description}</p>
+              )}
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="font-semibold text-gray-900 mb-2">Qué aprenderás</div>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>Competencias prácticas aplicables al trabajo</li>
+                    <li>Proyectos guiados para consolidar habilidades</li>
+                    <li>Buenas prácticas y metodología moderna</li>
+                  </ul>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="font-semibold text-gray-900 mb-2">Beneficios</div>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>Certificación respaldada por la UNA</li>
+                    <li>Acompañamiento y soporte académico</li>
+                    <li>Oportunidades para continuidad de estudios</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm">
+                <div className="flex items-center gap-2 text-gray-700"><FaBookOpen className="text-blue-600" /> <span>Modalidad:</span> <span className="font-medium">{selectedCourse.modality}</span></div>
+                <div className="flex items-center gap-2 text-gray-700"><FaClock className="text-blue-600" /> <span>Duración:</span> <span className="font-medium">{selectedCourse.duration || 'Por definir'}</span></div>
+                <div className="flex items-center gap-2 text-gray-700"><FaClock className="text-blue-600" /> <span>Horario:</span> <span className="font-medium">{selectedCourse.schedule || 'Por definir'}</span></div>
+                <div className="flex items-center gap-2 text-gray-700"><FaUser className="text-blue-600" /> <span>Instructor:</span> <span className="font-medium">{selectedCourse.instructor || 'Por asignar'}</span></div>
+                <div className="flex items-center gap-2 text-gray-700"><FaGraduationCap className="text-blue-600" /> <span>Nivel:</span> <span className="font-medium">{selectedCourse.level}</span></div>
+              </div>
+              <div className="flex items-center justify-between mt-6">
+                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200">
+                  <FaMoneyBillWave />
+                  <span className="text-lg font-bold">{formatPrice(selectedCourse.price)}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <a href={buildWhatsAppUrl(selectedCourse)} target="_blank" rel="noreferrer" className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Solicitar información</a>
+                  <a href="/matricula" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Matricúlate</a>
+                  <a href="/horarios" className="px-4 py-2 bg-white border border-blue-200 text-blue-700 rounded-lg text-sm hover:bg-blue-50">Ver horarios</a>
+                  <button onClick={() => setIsShareOpen(true)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">Compartir</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {isShareOpen && selectedCourse && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="absolute inset-0" onClick={() => setIsShareOpen(false)}></div>
+              <div className="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 border border-gray-200">
+                <div className="h-1 rounded-full bg-gradient-to-r from-blue-600 via-emerald-500 to-indigo-600 mb-3"></div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm font-semibold text-gray-900">Compartir curso</div>
+                  <button onClick={() => setIsShareOpen(false)} className="text-gray-600 hover:text-gray-800"><FaTimes /></button>
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                  {(() => {
+                    const links = getShareLinks(selectedCourse);
+                    return (
+                      <>
+                        <a href={links.facebook} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-600 text-white shadow"><FaFacebookF /></div>
+                          <span className="text-xs text-gray-700">Facebook</span>
+                        </a>
+                        <button onClick={() => { navigator.clipboard.writeText(links.tiktokCopy); }} className="flex flex-col items-center gap-2">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black text-white shadow"><FaTiktok /></div>
+                          <span className="text-xs text-gray-700">TikTok</span>
+                        </button>
+                        <a href={links.whatsapp} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-green-600 text-white shadow"><FaWhatsapp /></div>
+                          <span className="text-xs text-gray-700">WhatsApp</span>
+                        </a>
+                        <a href={links.email} className="flex flex-col items-center gap-2">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500 text-white shadow"><FaEnvelope /></div>
+                          <span className="text-xs text-gray-700">Correo</span>
+                        </a>
+                      </>
+                    );
+                  })()}
+                </div>
+                <button onClick={() => { shareCourse(selectedCourse); }} className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
+                  <FaLink />
+                  Copiar enlace
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
