@@ -698,6 +698,15 @@ function Cursos() {
             />
           </div>
 
+          <FormField
+            label="Nombre del Curso"
+            name="nombre"
+            value={form.nombre}
+            onChange={handleChange}
+            placeholder="Ej: Microsoft Word"
+            required
+          />
+
           {/* Imagen del curso (opcional) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div className="md:col-span-1">

@@ -143,6 +143,7 @@ module.exports = (pool, auth) => {
       const _estado = estado || 'activo';
 
       let iconoVal = (icono ?? '').toString();
+      iconoVal = iconoVal.trim().replace(/^`+|`+$/g, '');
       if (iconoVal.startsWith('http') || iconoVal.includes('/uploads') || iconoVal.startsWith('/src/Imagenes')) {
         // Conservar URL/ruta absoluta
       } else if (iconoVal) {
@@ -221,6 +222,7 @@ module.exports = (pool, auth) => {
       const _precio = precio ?? existing[0].precio ?? 0;
       const _estado = estado || existing[0].estado || 'activo';
       let iconoVal2 = (icono ?? existing[0].icono ?? '📚').toString();
+      iconoVal2 = iconoVal2.trim().replace(/^`+|`+$/g, '');
       if (iconoVal2.startsWith('http') || iconoVal2.includes('/uploads') || iconoVal2.startsWith('/src/Imagenes')) {
         // Conservar URL/ruta absoluta
       } else if (iconoVal2) {
