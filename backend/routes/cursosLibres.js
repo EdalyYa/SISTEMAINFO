@@ -162,17 +162,21 @@ module.exports = (pool, auth) => {
 
       // Crear horario vinculado (área CURSOS LIBRES) si viene en la petición
       if (horario && typeof horario === 'string') {
-        const area = 'CURSOS LIBRES';
-        const nombre_curso = nombre;
-        const dias = horario;
-        const grupo = `CL${courseId}`; // código de grupo automático
-        const modalidadHorario = (_modalidad || 'virtual').toUpperCase(); // VIRTUAL/PRESENCIAL
-        const instructorHorario = _instructor || '';
+        try {
+          const area = 'CURSOS LIBRES';
+          const nombre_curso = nombre;
+          const dias = horario;
+          const grupo = `CL${courseId}`; // código de grupo automático
+          const modalidadHorario = (_modalidad || 'virtual').toUpperCase(); // VIRTUAL/PRESENCIAL
+          const instructorHorario = _instructor || '';
 
-        await pool.query(`
-          INSERT INTO horarios (area, nombre_curso, dias, grupo, modalidad, instructor, estado)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [area, nombre_curso, dias, grupo, modalidadHorario === 'PRESENCIAL' ? 'PRESENCIAL' : 'VIRTUAL', instructorHorario, _estado]);
+          await pool.query(`
+            INSERT INTO horarios (area, nombre_curso, dias, grupo, modalidad, instructor, estado)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `, [area, nombre_curso, dias, grupo, modalidadHorario === 'PRESENCIAL' ? 'PRESENCIAL' : 'VIRTUAL', instructorHorario, _estado]);
+        } catch (e) {
+          console.warn('Horario CL upsert (create) falló, continuando:', e.message);
+        }
       }
 
       const [newCourse] = await pool.query('SELECT * FROM cursos_libres WHERE id = ?', [courseId]);
@@ -241,26 +245,30 @@ module.exports = (pool, auth) => {
 
       // Upsert del horario vinculado
       if (horario && typeof horario === 'string') {
-        const grupo = `CL${req.params.id}`;
-        const area = 'CURSOS LIBRES';
-        const nombre_curso = nombre || existing[0].nombre;
-        const dias = horario;
-        const modalidadHorario = (_modalidad || 'virtual').toUpperCase();
-        const instructorHorario = _instructor || '';
+        try {
+          const grupo = `CL${req.params.id}`;
+          const area = 'CURSOS LIBRES';
+          const nombre_curso = nombre || existing[0].nombre;
+          const dias = horario;
+          const modalidadHorario = (_modalidad || 'virtual').toUpperCase();
+          const instructorHorario = _instructor || '';
 
-        // Verificar si existe
-        const [h] = await pool.query('SELECT id FROM horarios WHERE grupo = ?', [grupo]);
-        if (h.length > 0) {
-          await pool.query(`
-            UPDATE horarios 
-            SET area = ?, nombre_curso = ?, dias = ?, modalidad = ?, instructor = ?, estado = ?
-            WHERE grupo = ?
-          `, [area, nombre_curso, dias, modalidadHorario === 'PRESENCIAL' ? 'PRESENCIAL' : 'VIRTUAL', instructorHorario, _estado, grupo]);
-        } else {
-          await pool.query(`
-            INSERT INTO horarios (area, nombre_curso, dias, grupo, modalidad, instructor, estado)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-          `, [area, nombre_curso, dias, grupo, modalidadHorario === 'PRESENCIAL' ? 'PRESENCIAL' : 'VIRTUAL', instructorHorario, _estado]);
+          // Verificar si existe
+          const [h] = await pool.query('SELECT id FROM horarios WHERE grupo = ?', [grupo]);
+          if (h.length > 0) {
+            await pool.query(`
+              UPDATE horarios 
+              SET area = ?, nombre_curso = ?, dias = ?, modalidad = ?, instructor = ?, estado = ?
+              WHERE grupo = ?
+            `, [area, nombre_curso, dias, modalidadHorario === 'PRESENCIAL' ? 'PRESENCIAL' : 'VIRTUAL', instructorHorario, _estado, grupo]);
+          } else {
+            await pool.query(`
+              INSERT INTO horarios (area, nombre_curso, dias, grupo, modalidad, instructor, estado)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
+            `, [area, nombre_curso, dias, grupo, modalidadHorario === 'PRESENCIAL' ? 'PRESENCIAL' : 'VIRTUAL', instructorHorario, _estado]);
+          }
+        } catch (e) {
+          console.warn('Horario CL upsert (update) falló, continuando:', e.message);
         }
       }
 
