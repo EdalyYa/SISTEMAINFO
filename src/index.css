@@ -127,5 +127,4 @@
   }
 }
 
-.slick-track { display: flex !important; }
-.slick-slide { float: none !important; }
+/* Sin overrides: usar estilos nativos de slick para cálculo de ancho */

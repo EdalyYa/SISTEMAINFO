@@ -130,8 +130,8 @@ function ProgramCatalog() {
     dots: true,
     infinite: true,
     speed: 500,
-    // Defecto en desktops grandes
-    slidesToShow: 4,
+    mobileFirst: true,
+    slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 2500,
@@ -141,13 +141,12 @@ function ProgramCatalog() {
     touchMove: true,
     prevArrow: <PrevArrow />,
     nextArrow: <NextArrow />,
-    // Breakpoints por ancho máximo (no mobileFirst):
-    // <=1280: 4, <=1024: 3, <=768: 1
+    // Mobile-first: aumentamos cantidad de slides en anchos mayores
     responsive: [
       {
-        breakpoint: 1280,
+        breakpoint: 768,
         settings: {
-          slidesToShow: 4,
+          slidesToShow: 2,
           arrows: true,
           centerMode: false,
         },
@@ -161,9 +160,9 @@ function ProgramCatalog() {
         },
       },
       {
-        breakpoint: 768,
+        breakpoint: 1280,
         settings: {
-          slidesToShow: 1, // móvil y tablets pequeñas: siempre 1
+          slidesToShow: 4,
           arrows: true,
           centerMode: false,
         },
