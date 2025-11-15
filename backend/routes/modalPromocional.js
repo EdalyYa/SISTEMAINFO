@@ -4,21 +4,26 @@ const path = require('path');
 const fs = require('fs');
 const { body, param, validationResult } = require('express-validator'); // Importar express-validator
 const ApiError = require('./ApiError'); // 1. Importar nuestra clase de error
+const { getSupabase } = require('../services/supabase');
+
+const STORAGE_PROVIDER = (process.env.STORAGE_PROVIDER || 'local').toLowerCase();
 
 // Configurar multer para subida de imágenes
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, '../uploads/modal');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'modal-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+const storage = STORAGE_PROVIDER === 'supabase'
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: function (req, file, cb) {
+        const uploadPath = path.join(__dirname, '../uploads/modal');
+        if (!fs.existsSync(uploadPath)) {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+      },
+      filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'modal-' + uniqueSuffix + path.extname(file.originalname));
+      }
+    });
 
 const upload = multer({ 
   storage: storage,
@@ -37,6 +42,23 @@ const upload = multer({
     }
   }
 });
+
+async function uploadFileToSupabase(file) {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+  const unique = `modal-${Date.now()}-${Math.round(Math.random()*1e9)}${ext}`;
+  const { error } = await supabase.storage.from('modal').upload(unique, file.buffer, {
+    contentType: file.mimetype || 'image/jpeg',
+    upsert: false
+  });
+  if (error) {
+    console.error('Error uploading to Supabase:', error.message || error);
+    return null;
+  }
+  const { data } = supabase.storage.from('modal').getPublicUrl(unique);
+  return data?.publicUrl || null;
+}
 
 // Middleware de validación genérico
 const validate = (req, res, next) => {
@@ -153,12 +175,32 @@ router.post('/admin', authenticateToken, upload.fields([
       video_tiktok_url, facebook_url, mostrar_en_primer_modal
     } = req.body;
 
-    const imagen = (req.files && req.files.imagen && req.files.imagen[0])
-      ? `/uploads/modal/${req.files.imagen[0].filename}`
-      : null;
-    const imagenesExtra = (req.files && req.files.imagenes)
-      ? req.files.imagenes.map(f => `/uploads/modal/${f.filename}`)
-      : [];
+    let imagen = null;
+    let imagenesExtra = [];
+    if (STORAGE_PROVIDER === 'supabase') {
+      try {
+        if (req.files && req.files.imagen && req.files.imagen[0]) {
+          imagen = await uploadFileToSupabase(req.files.imagen[0]);
+        }
+        if (req.files && req.files.imagenes && req.files.imagenes.length) {
+          const urls = [];
+          for (const f of req.files.imagenes) {
+            const u = await uploadFileToSupabase(f);
+            if (u) urls.push(u);
+          }
+          imagenesExtra = urls;
+        }
+      } catch (upErr) {
+        console.error('Supabase upload error (modal):', upErr);
+      }
+    } else {
+      imagen = (req.files && req.files.imagen && req.files.imagen[0])
+        ? `/uploads/modal/${req.files.imagen[0].filename}`
+        : null;
+      imagenesExtra = (req.files && req.files.imagenes)
+        ? req.files.imagenes.map(f => `/uploads/modal/${f.filename}`)
+        : [];
+    }
 
     // Construir columnas y valores dinámicamente según existan en la BD
     const insertFields = [];
@@ -299,14 +341,30 @@ router.put('/admin/:id', authenticateToken, upload.fields([
     pushSet('facebook_url', (facebook_url || null));
 
     if (req.files && req.files.imagen && req.files.imagen[0] && colSet.has('imagen')) {
-      setClauses.push('imagen = ?');
-      queryParams.push(`/uploads/modal/${req.files.imagen[0].filename}`);
+      if (STORAGE_PROVIDER === 'supabase') {
+        const url = await uploadFileToSupabase(req.files.imagen[0]);
+        setClauses.push('imagen = ?');
+        queryParams.push(url || null);
+      } else {
+        setClauses.push('imagen = ?');
+        queryParams.push(`/uploads/modal/${req.files.imagen[0].filename}`);
+      }
     }
     // Agregar imágenes extra si se subieron nuevas
     if (colSet.has('imagenes_extra')) {
-      const nuevasExtras = (req.files && req.files.imagenes)
-        ? req.files.imagenes.map(f => `/uploads/modal/${f.filename}`)
-        : [];
+      let nuevasExtras = [];
+      if (req.files && req.files.imagenes && req.files.imagenes.length) {
+        if (STORAGE_PROVIDER === 'supabase') {
+          const urls = [];
+          for (const f of req.files.imagenes) {
+            const u = await uploadFileToSupabase(f);
+            if (u) urls.push(u);
+          }
+          nuevasExtras = urls;
+        } else {
+          nuevasExtras = req.files.imagenes.map(f => `/uploads/modal/${f.filename}`);
+        }
+      }
       if (nuevasExtras.length > 0) {
         const merged = Array.isArray(previousExtraImages) ? [...previousExtraImages, ...nuevasExtras] : nuevasExtras;
         setClauses.push('imagenes_extra = ?');
