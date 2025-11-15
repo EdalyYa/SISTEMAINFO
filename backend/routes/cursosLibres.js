@@ -7,8 +7,10 @@ module.exports = (pool, auth) => {
   const router = express.Router();
 
   // Configuración de subida de imagen para cursos libres
+  const STORAGE_PROVIDER = (process.env.STORAGE_PROVIDER || 'local').toLowerCase();
+  const { getSupabase } = require('../services/supabase');
   const uploadsDir = path.join(__dirname, '..', 'uploads', 'cursos_libres');
-  const storage = multer.diskStorage({
+  const storageLocal = multer.diskStorage({
     destination: (req, file, cb) => {
       fs.mkdirSync(uploadsDir, { recursive: true });
       cb(null, uploadsDir);
@@ -22,7 +24,7 @@ module.exports = (pool, auth) => {
     }
   });
   const upload = multer({
-    storage,
+    storage: (STORAGE_PROVIDER === 'supabase' && getSupabase()) ? multer.memoryStorage() : storageLocal,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     fileFilter: (req, file, cb) => {
       if (/\.(png|jpg|jpeg|gif)$/i.test(file.originalname)) cb(null, true);
@@ -67,6 +69,24 @@ module.exports = (pool, auth) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No se recibió archivo' });
+      }
+      if (STORAGE_PROVIDER === 'supabase') {
+        const supabase = getSupabase();
+        if (!supabase) return res.status(500).json({ error: 'Supabase no configurado' });
+        const ext = (path.extname(req.file.originalname) || '.jpg').toLowerCase();
+        const id = Date.now().toString(36);
+        const name = `${id}_${Math.round(Math.random()*1e9)}${ext}`;
+        const { error: upErr } = await supabase.storage.from('cursos_libres').upload(name, req.file.buffer, {
+          contentType: req.file.mimetype || 'image/jpeg',
+          upsert: false
+        });
+        if (upErr) {
+          console.error('Error uploading to Supabase:', upErr.message || upErr);
+          return res.status(500).json({ error: 'Error al subir imagen' });
+        }
+        const { data } = supabase.storage.from('cursos_libres').getPublicUrl(name);
+        const publicUrl = data?.publicUrl || '';
+        return res.json({ url: publicUrl, filename: name });
       }
       const publicUrl = `/uploads/cursos_libres/${req.file.filename}`;
       res.json({ url: publicUrl, filename: req.file.filename });

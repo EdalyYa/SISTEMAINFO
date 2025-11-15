@@ -4,24 +4,25 @@ const path = require('path');
 const fs = require('fs');
 
 // Configurar multer para la carga de archivos
-const storage = multer.diskStorage({
+const STORAGE_PROVIDER = (process.env.STORAGE_PROVIDER || 'local').toLowerCase();
+const { getSupabase } = require('./services/supabase');
+
+const storageLocal = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadPath = path.join(__dirname, 'uploads', 'programas');
-    // Crear directorio si no existe
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
     cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
-    // Generar nombre único para el archivo
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, 'programa-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
 const upload = multer({ 
-  storage: storage,
+  storage: (STORAGE_PROVIDER === 'supabase' && getSupabase()) ? multer.memoryStorage() : storageLocal,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB límite
   },
@@ -167,20 +168,30 @@ module.exports = (pool, auth) => {
   });
 
   // Ruta para subir imagen
-  router.post('/upload-image', upload.single('imagen'), (req, res) => {
+  router.post('/upload-image', upload.single('imagen'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No se ha subido ningún archivo' });
       }
-
-      // Generar URL de la imagen
+      if (STORAGE_PROVIDER === 'supabase') {
+        const supabase = getSupabase();
+        if (!supabase) return res.status(500).json({ error: 'Supabase no configurado' });
+        const ext = (path.extname(req.file.originalname) || '.jpg').toLowerCase();
+        const name = `programa-${Date.now()}-${Math.round(Math.random()*1e9)}${ext}`;
+        const { error: upErr } = await supabase.storage.from('programas').upload(name, req.file.buffer, {
+          contentType: req.file.mimetype || 'image/jpeg',
+          upsert: false
+        });
+        if (upErr) {
+          console.error('Error uploading to Supabase:', upErr.message || upErr);
+          return res.status(500).json({ error: 'Error al subir imagen' });
+        }
+        const { data } = supabase.storage.from('programas').getPublicUrl(name);
+        const imageUrl = data?.publicUrl || '';
+        return res.json({ message: 'Imagen subida exitosamente', imageUrl, filename: name });
+      }
       const imageUrl = `/uploads/programas/${req.file.filename}`;
-      
-      res.json({ 
-        message: 'Imagen subida exitosamente',
-        imageUrl: imageUrl,
-        filename: req.file.filename
-      });
+      res.json({ message: 'Imagen subida exitosamente', imageUrl, filename: req.file.filename });
     } catch (error) {
       console.error('Error uploading image:', error);
       res.status(500).json({ error: 'Error al subir imagen' });

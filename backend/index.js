@@ -71,32 +71,45 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // del frontend a través del backend para evitar 404 en producción.
 app.use('/src/Imagenes', express.static(path.join(__dirname, '..', 'src', 'Imagenes')));
 
-// Configuración de subida de imágenes para cursos
-const cursosStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, 'uploads', 'cursos');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'curso-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Soporte de proveedor de almacenamiento: local (uploads/) o Supabase Storage
+const STORAGE_PROVIDER = (process.env.STORAGE_PROVIDER || 'local').toLowerCase();
+const { getSupabase } = require('./services/supabase');
 
-const uploadCursoImagen = multer({
-  storage: cursosStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: function (req, file, cb) {
-    if (file.mimetype && file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Solo se permiten archivos de imagen'));
-    }
+// Configuración de subida de imágenes para cursos
+function makeCursoMulter() {
+  if (STORAGE_PROVIDER === 'supabase' && getSupabase()) {
+    return multer({
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype && file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new Error('Solo se permiten archivos de imagen'));
+      }
+    });
   }
-});
+  const cursosStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      const uploadPath = path.join(__dirname, 'uploads', 'cursos');
+      if (!fs.existsSync(uploadPath)) {
+        fs.mkdirSync(uploadPath, { recursive: true });
+      }
+      cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      cb(null, 'curso-' + uniqueSuffix + path.extname(file.originalname));
+    }
+  });
+  return multer({
+    storage: cursosStorage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype && file.mimetype.startsWith('image/')) cb(null, true);
+      else cb(new Error('Solo se permiten archivos de imagen'));
+    }
+  });
+}
+const uploadCursoImagen = makeCursoMulter();
 
 // Pool de base de datos unificado (soporta SSL y DB_DISABLE)
 // Usa backend/config/database.js para centralizar configuración y compatibilidad con Render
@@ -1160,6 +1173,23 @@ app.post('/admin/cursos/upload-image', authenticateToken, uploadCursoImagen.sing
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No se ha subido ningún archivo' });
+    }
+    if (STORAGE_PROVIDER === 'supabase') {
+      const supabase = getSupabase();
+      if (!supabase) return res.status(500).json({ error: 'Supabase no configurado' });
+      const ext = path.extname(req.file.originalname || '').toLowerCase() || '.jpg';
+      const unique = `curso-${Date.now()}-${Math.round(Math.random()*1e9)}${ext}`;
+      const { error: upErr } = await supabase.storage.from('cursos').upload(unique, req.file.buffer, {
+        contentType: req.file.mimetype || 'image/jpeg',
+        upsert: false
+      });
+      if (upErr) {
+        console.error('Error uploading to Supabase:', upErr.message || upErr);
+        return res.status(500).json({ error: 'Error al subir imagen' });
+      }
+      const { data } = supabase.storage.from('cursos').getPublicUrl(unique);
+      const imageUrl = data?.publicUrl || '';
+      return res.json({ message: 'Imagen subida exitosamente', imageUrl, filename: unique });
     }
     const imageUrl = `/uploads/cursos/${req.file.filename}`;
     res.json({ message: 'Imagen subida exitosamente', imageUrl, filename: req.file.filename });
