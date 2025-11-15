@@ -100,9 +100,9 @@ const CursosLibresAdmin = () => {
       });
       if (resp.ok) {
         const data = await resp.json();
-        // Guardamos SOLO el nombre de archivo en BD para evitar límites de longitud
+        const url = (data && typeof data.url === 'string' && data.url.startsWith('http')) ? data.url : '';
         const filename = data.filename || (data.url?.split('/').pop());
-        setFormData(prev => ({ ...prev, icono: filename }));
+        setFormData(prev => ({ ...prev, icono: url || filename }));
         try {
           toast.success('Imagen subida correctamente', {
             title: 'Carga exitosa',

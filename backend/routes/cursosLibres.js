@@ -142,13 +142,21 @@ module.exports = (pool, auth) => {
       const _precio = precio || 0;
       const _estado = estado || 'activo';
 
-      const iconoNombre = icono ? path.basename(String(icono)) : '📚';
-      const iconoSafe = iconoNombre.slice(0, 50);
+      let iconoVal = (icono ?? '').toString();
+      if (iconoVal.startsWith('http') || iconoVal.includes('/uploads') || iconoVal.startsWith('/src/Imagenes')) {
+        // Conservar URL/ruta absoluta
+      } else if (iconoVal) {
+        const ext = (path.extname(iconoVal) || '').toLowerCase();
+        const base = path.basename(iconoVal, ext).replace(/[^a-zA-Z0-9-_]/g, '_');
+        iconoVal = `${base.slice(0,24)}${ext}`;
+      } else {
+        iconoVal = '📚';
+      }
       const [result] = await pool.query(`
         INSERT INTO cursos_libres 
         (nombre, categoria, icono, color, descripcion, duracion, modalidad, nivel, instructor, precio, estado, fecha_creacion)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-      `, [nombre, _categoria, iconoSafe, _color, _descripcion, _duracion, _modalidad, _nivel, _instructor, _precio, _estado]);
+      `, [nombre, _categoria, iconoVal.slice(0, 255), _color, _descripcion, _duracion, _modalidad, _nivel, _instructor, _precio, _estado]);
 
       const courseId = result.insertId;
 
@@ -208,8 +216,16 @@ module.exports = (pool, auth) => {
       const _instructor = instructor ?? existing[0].instructor ?? '';
       const _precio = precio ?? existing[0].precio ?? 0;
       const _estado = estado || existing[0].estado || 'activo';
-      const iconoNombre = (icono ? path.basename(String(icono)) : (existing[0].icono || '📚'));
-      const iconoSafe = iconoNombre.slice(0, 50);
+      let iconoVal2 = (icono ?? existing[0].icono ?? '📚').toString();
+      if (iconoVal2.startsWith('http') || iconoVal2.includes('/uploads') || iconoVal2.startsWith('/src/Imagenes')) {
+        // Conservar URL/ruta absoluta
+      } else if (iconoVal2) {
+        const ext = (path.extname(iconoVal2) || '').toLowerCase();
+        const base = path.basename(iconoVal2, ext).replace(/[^a-zA-Z0-9-_]/g, '_');
+        iconoVal2 = `${base.slice(0,24)}${ext}`;
+      } else {
+        iconoVal2 = '📚';
+      }
 
       const [result] = await pool.query(`
         UPDATE cursos_libres 
@@ -217,7 +233,7 @@ module.exports = (pool, auth) => {
             duracion = ?, modalidad = ?, nivel = ?, instructor = ?, precio = ?, 
             estado = ?, fecha_actualizacion = NOW()
         WHERE id = ?
-      `, [nombre, _categoria, iconoSafe, _color, _descripcion, _duracion, _modalidad, _nivel, _instructor, _precio, _estado, req.params.id]);
+      `, [nombre, _categoria, iconoVal2.slice(0, 255), _color, _descripcion, _duracion, _modalidad, _nivel, _instructor, _precio, _estado, req.params.id]);
 
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: 'Curso libre no encontrado' });

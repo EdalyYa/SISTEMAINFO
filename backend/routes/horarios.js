@@ -8,33 +8,11 @@ module.exports = (pool, { authenticateToken }) => {
   const syncHorarios = async () => {
     // Cursos Libres -> CL{id}
     try {
-      const [libres] = await pool.execute('SELECT id, nombre, modalidad, instructor, estado, horario FROM cursos_libres');
-      for (const c of libres) {
-        if (c && typeof c.horario === 'string' && c.horario.trim().length > 0) {
-          const grupo = `CL${c.id}`;
-          const nombre_curso = c.nombre;
-          const dias = c.horario;
-          const modalidad = (c.modalidad || 'virtual').toUpperCase() === 'PRESENCIAL' ? 'PRESENCIAL' : 'VIRTUAL';
-          const instructor = c.instructor || '';
-          const estado = c.estado || 'activo';
-          const area = 'CURSOS LIBRES';
-
-          const [exists] = await pool.execute('SELECT id FROM horarios WHERE grupo = ?', [grupo]);
-          if (exists.length > 0) {
-            await pool.execute(
-              'UPDATE horarios SET area = ?, nombre_curso = ?, dias = ?, modalidad = ?, instructor = ?, estado = ? WHERE grupo = ?',
-              [area, nombre_curso, dias, modalidad, instructor, estado, grupo]
-            );
-          } else {
-            await pool.execute(
-              'INSERT INTO horarios (area, nombre_curso, dias, grupo, modalidad, instructor, estado) VALUES (?, ?, ?, ?, ?, ?, ?)',
-              [area, nombre_curso, dias, grupo, modalidad, instructor, estado]
-            );
-          }
-        }
-      }
+      const [libres] = await pool.execute('SELECT id, nombre, modalidad, instructor, estado FROM cursos_libres');
+      // Si la tabla no tiene columna "horario", no se realiza sincronización automática desde cursos_libres.
+      // Los horarios para CL se crean/actualizan desde las rutas admin al recibir el campo "horario".
+      // Esta sección queda como no-op para evitar errores en proveedores con esquemas anteriores.
     } catch (e) {
-      // Continuar aunque falle esta parte
       console.warn('Sync cursos libres error:', e.message);
     }
 
