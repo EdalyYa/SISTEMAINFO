@@ -55,11 +55,29 @@ function ProgramCatalog() {
   const [loading, setLoading] = useState(true);
   const [modalidad, setModalidad] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  const [slidesCount, setSlidesCount] = useState(1);
   const navigate = useNavigate();
   const handleImgError = (e) => { e.currentTarget.src = Excel; };
 
   useEffect(() => {
     fetchPrograms();
+  }, []);
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (w < 768) setSlidesCount(1);
+      else if (w < 1024) setSlidesCount(2);
+      else if (w < 1280) setSlidesCount(3);
+      else setSlidesCount(4);
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
   }, []);
 
   // Fallback local para verificar el diseño cuando la API falla
@@ -130,8 +148,7 @@ function ProgramCatalog() {
     dots: true,
     infinite: true,
     speed: 500,
-    mobileFirst: true,
-    slidesToShow: 1,
+    slidesToShow: slidesCount,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 2500,
@@ -141,33 +158,6 @@ function ProgramCatalog() {
     touchMove: true,
     prevArrow: <PrevArrow />,
     nextArrow: <NextArrow />,
-    // Mobile-first: aumentamos cantidad de slides en anchos mayores
-    responsive: [
-      {
-        breakpoint: 768,
-        settings: {
-          slidesToShow: 2,
-          arrows: true,
-          centerMode: false,
-        },
-      },
-      {
-        breakpoint: 1024,
-        settings: {
-          slidesToShow: 3,
-          arrows: true,
-          centerMode: false,
-        },
-      },
-      {
-        breakpoint: 1280,
-        settings: {
-          slidesToShow: 4,
-          arrows: true,
-          centerMode: false,
-        },
-      },
-    ],
   };
 
   const handleDetailsClick = (id) => {
