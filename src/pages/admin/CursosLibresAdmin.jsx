@@ -591,7 +591,7 @@ const CursosLibresAdmin = () => {
                     </label>
                     <div className="space-y-2">
                       {/* Preview */}
-                      {esImagen(formData.icono) && (
+                      {(typeof formData.icono === 'string' && (formData.icono.startsWith('http') || formData.icono.startsWith('/uploads') || esImagen(formData.icono))) && (
                         <div className="flex items-center space-x-3">
                           <img src={buildPublicUrl(formData.icono)} alt="preview" className="w-12 h-12 rounded-lg object-cover ring-1 ring-gray-200" />
                           <span className="text-xs text-gray-500 truncate max-w-[200px]">{formData.icono}</span>
