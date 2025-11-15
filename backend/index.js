@@ -136,6 +136,75 @@ async function ensureSecureUserSchema() {
 
 ensureSecureUserSchema().catch(() => process.exit(1));
 
+async function ensureModulosTable() {
+  try {
+    await pool.query(
+      "CREATE TABLE IF NOT EXISTS modulos (id INT AUTO_INCREMENT PRIMARY KEY, programa_id INT NOT NULL, nombre VARCHAR(150) NOT NULL, descripcion TEXT, numero VARCHAR(10), estado ENUM('activo','inactivo') DEFAULT 'activo', creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (programa_id) REFERENCES programas(id) ON DELETE CASCADE)"
+    );
+    const [idxProg] = await pool.query(
+      "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'modulos' AND INDEX_NAME = 'idx_modulos_programa'"
+    );
+    if (!idxProg[0].c) {
+      try { await pool.query("CREATE INDEX idx_modulos_programa ON modulos(programa_id)"); } catch (_) {}
+    }
+    const [idxEst] = await pool.query(
+      "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'modulos' AND INDEX_NAME = 'idx_modulos_estado'"
+    );
+    if (!idxEst[0].c) {
+      try { await pool.query("CREATE INDEX idx_modulos_estado ON modulos(estado)"); } catch (_) {}
+    }
+  } catch (e) {
+    console.error('ensureModulosTable error:', e.message || e);
+  }
+}
+
+async function ensureCursosOptionalColumns() {
+  try {
+    const [colsRows] = await pool.query(
+      "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cursos'"
+    );
+    const names = new Set(Array.isArray(colsRows) ? colsRows.map(r => r.COLUMN_NAME) : []);
+    if (!names.has('modulo_id')) {
+      try { await pool.query("ALTER TABLE cursos ADD COLUMN modulo_id INT NULL AFTER programa_id"); } catch (_) {}
+    }
+    if (!names.has('imagen')) {
+      try { await pool.query("ALTER TABLE cursos ADD COLUMN imagen VARCHAR(255) NULL AFTER estado"); } catch (_) {}
+    }
+    const [fkRows] = await pool.query(
+      "SELECT COUNT(*) AS c FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'cursos' AND CONSTRAINT_NAME = 'fk_cursos_modulo'"
+    );
+    if (!fkRows[0].c) {
+      try { await pool.query("ALTER TABLE cursos ADD CONSTRAINT fk_cursos_modulo FOREIGN KEY (modulo_id) REFERENCES modulos(id) ON DELETE SET NULL ON UPDATE CASCADE"); } catch (_) {}
+    }
+    const [idxRows] = await pool.query(
+      "SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cursos' AND INDEX_NAME = 'idx_cursos_modulo'"
+    );
+    if (!idxRows[0].c) {
+      try { await pool.query("CREATE INDEX idx_cursos_modulo ON cursos(modulo_id)"); } catch (_) {}
+    }
+  } catch (e) {
+    console.error('ensureCursosOptionalColumns error:', e.message || e);
+  }
+}
+
+async function ensureCursosLibresIconoSize() {
+  try {
+    const [col] = await pool.query(
+      "SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cursos_libres' AND COLUMN_NAME = 'icono'"
+    );
+    const info = Array.isArray(col) && col[0] ? col[0] : null;
+    if (info && info.DATA_TYPE === 'varchar' && (info.CHARACTER_MAXIMUM_LENGTH || 0) < 255) {
+      try { await pool.query("ALTER TABLE cursos_libres MODIFY COLUMN icono VARCHAR(512) DEFAULT '📚'"); } catch (_) {}
+    }
+  } catch (e) {
+    console.error('ensureCursosLibresIconoSize error:', e.message || e);
+  }
+}
+
+ensureModulosTable().catch(() => {});
+ensureCursosOptionalColumns().catch(() => {});
+ensureCursosLibresIconoSize().catch(() => {});
+
 // Mount auth module router under /api/auth
 const authModule = require('./auth')(pool);
 app.use('/api/auth', authModule.router);
