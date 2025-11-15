@@ -127,3 +127,6 @@
   }
 }
 
+.slick-track { display: flex !important; }
+.slick-slide { float: none !important; }
+.slick-slide > div { width: 100% !important; }

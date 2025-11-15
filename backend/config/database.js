@@ -20,6 +20,7 @@ const pool = DB_DISABLED
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'infouna',
+      charset: 'utf8mb4',
       waitForConnections: true,
       connectionLimit: Number(process.env.DB_CONN_LIMIT || 10),
       queueLimit: 0,

@@ -130,6 +130,7 @@ function ProgramCatalog() {
     dots: true,
     infinite: true,
     speed: 500,
+    mobileFirst: true,
     // Defecto en desktops grandes
     slidesToShow: 4,
     slidesToScroll: 1,

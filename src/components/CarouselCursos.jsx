@@ -87,7 +87,10 @@ function CarouselCursos({ cursos: cursosProp, title = 'Cursos Destacados', hideH
     };
     update();
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    const onOrient = () => update();
+    window.addEventListener('orientationchange', onOrient);
+    const t = setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
+    return () => { window.removeEventListener('resize', update); window.removeEventListener('orientationchange', onOrient); clearTimeout(t); };
   }, []);
 
   // Calcular ancho del item para transición precisa
@@ -102,7 +105,9 @@ function CarouselCursos({ cursos: cursosProp, title = 'Cursos Destacados', hideH
     };
     measure();
     window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
+    const onOrient = () => measure();
+    window.addEventListener('orientationchange', onOrient);
+    return () => { window.removeEventListener('resize', measure); window.removeEventListener('orientationchange', onOrient); };
   }, [cursos, itemsPerView]);
 
   // Inicializar offset según dirección
