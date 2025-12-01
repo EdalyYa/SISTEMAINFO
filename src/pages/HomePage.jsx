@@ -21,7 +21,6 @@ import WhatsAppButton from "../components/WhatsAppButton";
 // import CursosLibres from "../components/CursosLibres"; // Removido del Home en favor de dos carruseles
 import videoFile from "../videos/Video.mp4";
 import SocialHub from "../components/SocialHub";
-import { FaMicrochip } from 'react-icons/fa';
 import ImageOptimized from "../components/ImageOptimized";
 import edificioInfouna from '../Imagenes/edificio-infouna.jpg';
 import { Button } from '../components/ui';
@@ -226,28 +225,26 @@ function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="relative rounded-3xl bg-blue-50 border border-blue-100 p-3 shadow-sm overflow-hidden text-center mb-3">
             <div className="inline-flex items-center gap-2 px-2 py-1 bg-blue-50 text-blue-700 rounded-full ring-1 ring-blue-200 mb-1 font-mono">
-              <FaMicrochip className="w-4 h-4" />
-              <span className="text-xs font-semibold">INFO-LABS</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-bold mb-1 text-blue-900">Laboratorios de Última Generación</h2>
             <p className="text-xs md:text-sm text-gray-700 max-w-2xl mx-auto font-mono">Modernización tecnológica con innovación, conectividad Huawei y formación práctica.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-3 text-center">
+          <div className="flex flex-col md:flex-row gap-2 md:gap-3 mb-3 justify-center">
+            <div className="w-full md:w-1/3 bg-white rounded-xl shadow-sm border border-blue-100 p-3 text-center">
               <div className="inline-flex items-center justify-center gap-2 mb-1">
                 <span className="inline-block w-2 h-2 rounded-full bg-blue-600" aria-hidden="true"></span>
                 <h3 className="text-base font-bold text-blue-900">Laboratorios de Innovación</h3>
               </div>
               <p className="text-gray-700 text-xs">Espacios con tecnología de vanguardia para proyectos innovadores.</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-3 text-center">
+            <div className="w-full md:w-1/3 bg-white rounded-xl shadow-sm border border-blue-100 p-3 text-center">
               <div className="inline-flex items-center justify-center gap-2 mb-1">
                 <span className="inline-block w-2 h-2 rounded-full bg-cyan-600" aria-hidden="true"></span>
                 <h3 className="text-base font-bold text-blue-900">Tecnología Avanzada</h3>
               </div>
               <p className="text-gray-700 text-xs">Equipos de última generación para práctica en sistemas.</p>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-3 text-center">
+            <div className="w-full md:w-1/3 bg-white rounded-xl shadow-sm border border-blue-100 p-3 text-center">
               <div className="inline-flex items-center justify-center gap-2 mb-1">
                 <span className="inline-block w-2 h-2 rounded-full bg-indigo-600" aria-hidden="true"></span>
                 <h3 className="text-base font-bold text-blue-900">Conectividad Total</h3>

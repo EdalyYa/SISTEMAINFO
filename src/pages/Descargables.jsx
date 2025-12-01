@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaUniversity, FaFileAlt, FaExternalLinkAlt, FaMicrochip } from 'react-icons/fa';
+import { FaFileAlt, FaExternalLinkAlt, FaUniversity } from 'react-icons/fa';
 import { Card, CardHeader, CardTitle, CardContent, Button } from '../components/ui';
 import { API_BASE } from '../config/api';
 
@@ -25,37 +25,42 @@ const descargables = [
 
 function DescargablesPage() {
   return (
-    <main className="bg-white min-h-screen">
-      <section className="max-w-6xl mx-auto px-6 py-8">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 border border-slate-800 p-6 mb-6 shadow-xl ring-1 ring-blue-300/30">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-emerald-500 to-indigo-600"></div>
-          <div className="flex items-center gap-3 text-white">
-            <FaMicrochip className="text-emerald-400 text-2xl" />
-            <FaUniversity className="text-blue-300 text-2xl" />
-            <h1 className="text-2xl md:text-3xl font-bold">Descargables − Instituto de Informática INFOUNA</h1>
-          </div>
-          <p className="text-slate-200 mt-2">Temarios, guías de inscripción y documentos informativos del Instituto de Informática INFOUNA.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full bg-emerald-500/90 text-white font-mono tracking-wider">PDF</span>
-            <span className="inline-flex px-2.5 py-1 text-[11px] font-semibold rounded-full bg-blue-600/90 text-white font-mono tracking-wider">DOCS</span>
+    <div className="bg-gradient-to-b from-gray-50 to-white">
+      <div className="relative mb-4 md:mb-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="relative rounded-3xl bg-blue-50 border border-blue-100 p-6 shadow-sm overflow-hidden">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.12)_1px,transparent_1px)] [background-size:22px_22px] opacity-50 pointer-events-none"></div>
+            <div className="relative text-center">
+              <div className="inline-flex items-center gap-2 mb-1 justify-center">
+                <FaUniversity className="text-blue-600" />
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Descargables − Instituto de Informática INFOUNA</h1>
+              </div>
+              <p className="text-base md:text-xl text-gray-600 max-w-3xl mx-auto">Temarios, guías de inscripción y documentos informativos del Instituto de Informática INFOUNA.</p>
+              <div className="mt-2 flex flex-wrap justify-center gap-2">
+                <span className="inline-flex px-2.5 py-1 text-[11px] font-medium rounded-full bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200">PDF</span>
+                <span className="inline-flex px-2.5 py-1 text-[11px] font-medium rounded-full bg-blue-50 text-blue-800 ring-1 ring-blue-200">Docs</span>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="max-w-6xl mx-auto px-4 py-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {descargables.map((item, i) => (
-            <Card key={i} className="rounded-xl bg-white/95 border border-blue-100 backdrop-blur-sm hover:border-blue-200 hover:shadow-xl transition group">
+            <Card key={i} className="rounded-xl hover:shadow-md transition">
+              <div className="h-1 bg-gradient-to-r from-blue-700 via-cyan-600 to-indigo-700"></div>
               <CardHeader className="flex items-center gap-2">
-                <FaFileAlt className="text-indigo-600 group-hover:text-blue-700" />
-                <CardTitle className="text-gray-900 font-mono tracking-wide">{item.titulo}</CardTitle>
+                <FaFileAlt className="text-indigo-600" />
+                <CardTitle className="text-blue-900 text-lg md:text-xl font-bold">{item.titulo}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-700">{item.descripcion}</p>
+                <p className="text-sm md:text-base text-gray-700 leading-relaxed">{item.descripcion}</p>
                 <Button
                   variant="primary"
                   size="sm"
                   rightIcon={FaExternalLinkAlt}
                   disabled={item.url === '#'}
-                  className="font-mono tracking-wider"
                   onClick={() => { if (item.url !== '#') window.open(item.url, '_blank', 'noopener'); }}
                 >
                   {item.url === '#' ? 'Próximamente' : 'Descargar PDF'}
@@ -64,8 +69,8 @@ function DescargablesPage() {
             </Card>
           ))}
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
 

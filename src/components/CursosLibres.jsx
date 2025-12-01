@@ -7,7 +7,6 @@ import courseImg2 from '../Imagenes/cursos/course2.jpg';
 import courseImg3 from '../Imagenes/cursos/course3.jpg';
 import courseImg4 from '../Imagenes/cursos/course4.jpg';
 import CarouselCursos from './CarouselCursos';
-import { FaMicrochip } from 'react-icons/fa';
 
 const CursosLibres = () => {
   const location = useLocation();
@@ -293,23 +292,19 @@ const CursosLibres = () => {
   }
 
   return (
-    <section className="pt-4 pb-8 bg-white relative overflow-hidden">
-      {/* Elementos decorativos de fondo */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-green-400/20 to-blue-400/20 rounded-full blur-3xl"></div>
-      </div>
-
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="relative rounded-xl mb-4 overflow-hidden bg-gradient-to-r from-white to-blue-50 border border-blue-100">
-          <div className="text-center px-4 py-3">
-            <div className="inline-flex items-center gap-2 mb-1">
-              <FaMicrochip className="text-blue-700" />
-              <h2 className="text-2xl md:text-3xl font-bold text-blue-900">Cursos Libres</h2>
+    <section className="bg-gradient-to-b from-gray-50 to-white py-4 md:py-6 relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="relative mb-4 md:mb-6">
+          <div className="rounded-3xl bg-blue-50 border border-blue-100 p-6 shadow-sm overflow-hidden">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.12)_1px,transparent_1px)] [background-size:22px_22px] opacity-50 pointer-events-none"></div>
+            <div className="relative text-center">
+              <div className="inline-flex items-center gap-2 mb-1 justify-center">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Cursos Libres</h2>
+              </div>
+              <p className="text-base md:text-xl text-gray-600 max-w-3xl mx-auto">
+                Cursos cortos y especializados para impulsar tus habilidades.
+              </p>
             </div>
-            <p className="text-gray-700 text-sm md:text-base max-w-2xl mx-auto font-mono">
-              Cursos cortos y especializados para impulsar tus habilidades.
-            </p>
           </div>
         </div>
 
@@ -320,7 +315,7 @@ const CursosLibres = () => {
               placeholder="Buscar cursos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 pl-10 pr-4 text-blue-900 bg-white border border-blue-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-200 transition-all duration-300 text-sm font-mono"
+              className="w-full px-4 py-2 pl-10 pr-4 text-gray-900 bg-white border border-blue-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-200 transition-all duration-300 text-sm"
             />
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -377,10 +372,10 @@ const CursosLibres = () => {
                         {fixMojibake(curso.descripcion)}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs font-mono font-semibold bg-blue-50 text-blue-700 ring-1 ring-blue-200 px-2 py-1 rounded-full">
+                        <span className="text-xs font-medium bg-blue-50 text-blue-700 ring-1 ring-blue-200 px-2 py-1 rounded-full">
                           {categorias.find(c => c.id === curso.categoria)?.icono} {categorias.find(c => c.id === curso.categoria)?.nombre}
                         </span>
-                        <span className="text-xs text-blue-700 font-mono font-medium">{curso.horas ? `${curso.horas}h` : '40h'}</span>
+                        <span className="text-xs text-blue-700 font-medium">{curso.horas ? `${curso.horas}h` : '40h'}</span>
                       </div>
                     </div>
                   </div>

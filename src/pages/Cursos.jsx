@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { API_BASE } from '../config/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
-import { FaFilter, FaSearch, FaClock, FaUser, FaBookOpen, FaGraduationCap, FaMoneyBillWave, FaTimes, FaFacebookF, FaTiktok, FaWhatsapp, FaEnvelope, FaLink, FaMicrochip } from 'react-icons/fa';
+import { FaFilter, FaSearch, FaClock, FaUser, FaBookOpen, FaGraduationCap, FaMoneyBillWave, FaTimes, FaFacebookF, FaTiktok, FaWhatsapp, FaEnvelope, FaLink } from 'react-icons/fa';
 import infoLogo from '../logo.png';
 import { Button } from '../components/ui';
 
@@ -430,18 +430,19 @@ function Cursos() {
   }
 
   return (
-    <div className="bg-gray-50 py-4 px-4">
+    <div className="bg-gradient-to-b from-gray-50 to-white py-4 md:py-6 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="relative rounded-xl mb-4 overflow-hidden bg-gradient-to-r from-white to-blue-50 border border-blue-100">
-          <div className="text-center px-4 py-3">
-            <div className="inline-flex items-center gap-2 mb-1">
-              <FaMicrochip className="text-blue-700" />
-              <h1 className="text-2xl font-bold text-blue-900">Todos los Cursos</h1>
+        <div className="relative mb-4 md:mb-6">
+          <div className="rounded-3xl bg-blue-50 border border-blue-100 p-6 shadow-sm overflow-hidden">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.12)_1px,transparent_1px)] [background-size:22px_22px] opacity-50 pointer-events-none"></div>
+            <div className="relative text-center">
+              <div className="inline-flex items-center gap-2 mb-1 justify-center">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Todos los Cursos</h1>
+              </div>
+              <p className="text-base md:text-xl text-gray-600 max-w-3xl mx-auto">
+                Catálogo completo de cursos con opciones de filtrado y búsqueda para encontrar el curso perfecto.
+              </p>
             </div>
-            <p className="text-sm text-gray-700 max-w-2xl mx-auto font-mono">
-              Catálogo completo de cursos con opciones de filtrado y búsqueda para encontrar el curso perfecto.
-            </p>
           </div>
         </div>
 
@@ -456,7 +457,7 @@ function Cursos() {
                 placeholder="Buscar cursos, programas o instructores..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm font-mono text-blue-900"
+                className="w-full pl-10 pr-3 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm text-gray-900"
               />
             </div>
 
@@ -465,7 +466,7 @@ function Cursos() {
               <select
                 value={selectedModality}
                 onChange={(e) => setSelectedModality(e.target.value)}
-                className="px-2.5 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm font-mono text-blue-900"
+                className="px-2.5 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm text-gray-900"
               >
                 <option value="">Todas las modalidades</option>
                 {modalities.map(modality => (
@@ -476,7 +477,7 @@ function Cursos() {
               <select
                 value={selectedLevel}
                 onChange={(e) => setSelectedLevel(e.target.value)}
-                className="px-2.5 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm font-mono text-blue-900"
+                className="px-2.5 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm text-gray-900"
               >
                 <option value="">Todos los niveles</option>
                 {levels.map(level => (
@@ -487,7 +488,7 @@ function Cursos() {
               <select
                 value={selectedProgram}
                 onChange={(e) => setSelectedProgram(e.target.value)}
-                className="px-2.5 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm font-mono text-blue-900"
+                className="px-2.5 py-1.5 border border-blue-200 rounded-md focus:ring-1 focus:ring-blue-400 focus:border-blue-200 text-sm text-gray-900"
               >
                 <option value="">Todos los programas</option>
                 {programNames.map(program => (
@@ -497,7 +498,7 @@ function Cursos() {
 
               <button
                 onClick={clearFilters}
-                className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-sm font-mono"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-sm"
               >
                 <FaFilter />
                 Limpiar
@@ -537,7 +538,7 @@ function Cursos() {
                     <h3 className="text-sm font-semibold text-blue-900 line-clamp-2">
                       {course.name}
                     </h3>
-                    <span className={`px-2 py-0.5 text-[11px] rounded-full font-mono ring-1 ${
+                    <span className={`px-2 py-0.5 text-[11px] rounded-full font-medium ring-1 ${
                       course.modality === 'Virtual' 
                         ? 'bg-green-50 text-green-700 ring-green-200' 
                         : 'bg-indigo-50 text-indigo-700 ring-indigo-200'
@@ -552,7 +553,7 @@ function Cursos() {
                     <p><strong>Duración:</strong> {course.duration}</p>
                     <p><strong>Horario:</strong> {course.schedule}</p>
                     <p><strong>Nivel:</strong> 
-                      <span className={`ml-2 px-2 py-0.5 text-[11px] rounded-full font-mono ring-1 ${
+                      <span className={`ml-2 px-2 py-0.5 text-[11px] rounded-full font-medium ring-1 ${
                         course.level === 'Básico' ? 'bg-green-50 text-green-700 ring-green-200' :
                         course.level === 'Intermedio' ? 'bg-amber-50 text-amber-700 ring-amber-200' :
                         'bg-red-50 text-red-700 ring-red-200'
@@ -563,7 +564,7 @@ function Cursos() {
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <div className="text-sm font-bold text-blue-700 font-mono">
+                    <div className="text-sm font-bold text-blue-700">
                       {course.price ? `$${course.price}` : 'Consultar precio'}
                     </div>
                     <Button variant="primary" size="sm" onClick={() => { setSelectedCourse(course); setIsModalOpen(true); }}>Ver detalles</Button>

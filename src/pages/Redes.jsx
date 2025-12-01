@@ -3,26 +3,24 @@ import SocialHub from "../components/SocialHub";
 
 function Redes() {
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <section className="relative mb-3 px-4">
+    <div className="bg-gradient-to-b from-gray-50 to-white">
+      <section className="relative mb-4 md:mb-6">
         <div className="mx-auto max-w-6xl">
-          <div className="relative rounded-3xl bg-blue-50 border border-blue-100 p-3 shadow-sm overflow-hidden">
+          <div className="relative rounded-3xl bg-blue-50 border border-blue-100 p-6 shadow-sm overflow-hidden">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.12)_1px,transparent_1px)] [background-size:22px_22px] opacity-50 pointer-events-none"></div>
             <div className="relative text-center">
-              <div className="inline-flex items-center gap-2 px-2 py-1 bg-blue-50 text-blue-700 rounded-full ring-1 ring-blue-200 mb-1 font-mono">
-                <span className="text-xs font-semibold">INFO-TECH</span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-bold mb-1 text-blue-900">Redes Sociales</h1>
-              <p className="text-xs md:text-sm text-gray-700 max-w-lg mx-auto font-mono">Sigue nuestras novedades en Facebook, TikTok, WhatsApp y YouTube.</p>
+              <h1 className="text-3xl md:text-4xl font-bold mb-1 text-gray-900">Redes Sociales</h1>
+              <p className="text-base md:text-xl text-gray-600 max-w-3xl mx-auto">Sigue nuestras novedades en Facebook, TikTok, WhatsApp y YouTube.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-3 px-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-5">
           <SocialHub />
         </div>
-      </section>
+      </div>
     </div>
   );
 }

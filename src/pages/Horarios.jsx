@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../config/api';
-import { FaClock, FaSearch, FaDesktop, FaUsers, FaMicrochip } from 'react-icons/fa';
+import { FaClock, FaSearch, FaDesktop, FaUsers } from 'react-icons/fa';
 
 function Horarios() {
   const [horariosData, setHorariosData] = useState([]);
@@ -138,20 +138,24 @@ function Horarios() {
   }
 
   return (
-    <section className="max-w-7xl mx-auto px-4 py-3">
-      <div className="relative mb-3 rounded-xl overflow-hidden bg-gradient-to-r from-white to-blue-50 border border-blue-100 p-4">
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 mb-1">
-            <FaMicrochip className="text-blue-700" />
-            <h1 className="text-xl md:text-2xl font-bold text-blue-900">Horarios de Cursos</h1>
-          </div>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-            <span className="inline-flex px-2.5 py-1 text-[11px] font-mono font-semibold rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200">Total: {totalCursos}</span>
-            <span className="inline-flex px-2.5 py-1 text-[11px] font-mono font-semibold rounded-full bg-green-50 text-green-700 ring-1 ring-green-200">Virtual: {cursosVirtuales}</span>
-            <span className="inline-flex px-2.5 py-1 text-[11px] font-mono font-semibold rounded-full bg-orange-50 text-orange-700 ring-1 ring-orange-200">Presencial: {cursosPresenciales}</span>
+    <section className="bg-gradient-to-b from-gray-50 to-white py-4 md:py-6">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="relative mb-4 md:mb-6">
+          <div className="rounded-3xl bg-blue-50 border border-blue-100 p-6 shadow-sm overflow-hidden">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.12)_1px,transparent_1px)] [background-size:22px_22px] opacity-50 pointer-events-none"></div>
+            <div className="relative text-center">
+              <div className="inline-flex items-center gap-2 mb-1 justify-center">
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Horarios de Cursos</h1>
+              </div>
+              <p className="text-base md:text-xl text-gray-600 max-w-3xl mx-auto">Consulta horarios y modalidades de cursos INFONA y Cursos Libres.</p>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                <span className="inline-flex px-2.5 py-1 text-[11px] font-medium rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200">Total: {totalCursos}</span>
+                <span className="inline-flex px-2.5 py-1 text-[11px] font-medium rounded-full bg-green-50 text-green-700 ring-1 ring-green-200">Virtual: {cursosVirtuales}</span>
+                <span className="inline-flex px-2.5 py-1 text-[11px] font-medium rounded-full bg-orange-50 text-orange-700 ring-1 ring-orange-200">Presencial: {cursosPresenciales}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Filtros generales: búsqueda y programa (aplican a ambas columnas) */}
       <div className="bg-white rounded-lg p-2 mb-2 shadow-sm border border-gray-200">
@@ -186,10 +190,11 @@ function Horarios() {
       {/* Dos columnas: izquierda Libres, derecha INFONA. Solo Curso, Horario, Modalidad */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Columna: Cursos libres */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden border-l-4 border-purple-300">
-          <div className="flex items-center justify-between px-3 py-1 border-b border-gray-200 bg-gray-50 text-xs font-semibold text-purple-800">
-            <span className="inline-flex items-center gap-1">Cursos libres</span>
-            <span className="inline-flex px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-semibold">{cursosLibres.length}</span>
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden border-l-4 border-slate-400">
+          <div className="h-1 bg-gradient-to-r from-slate-700 via-blue-700 to-slate-800"></div>
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50 text-sm md:text-base font-semibold text-slate-800">
+            <span className="inline-flex items-center gap-1">Cursos Libres</span>
+            <span className="inline-flex px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[11px] font-semibold">{cursosLibres.length}</span>
           </div>
           {/* Filtros columna Libres */}
           <div className="px-3 py-1 flex flex-col sm:flex-row gap-2 items-stretch">
@@ -215,9 +220,9 @@ function Horarios() {
             <table className="min-w-full">
               <thead className="bg-gray-100 text-gray-800">
                 <tr>
-                  <th className="px-2 py-1 text-left text-xs font-semibold uppercase">Curso</th>
-                  <th className="px-2 py-1 text-left text-xs font-semibold uppercase">Horario</th>
-                  <th className="px-2 py-1 text-left text-xs font-semibold uppercase">Modalidad</th>
+                  <th className="px-2 py-1 text-left text-sm font-semibold uppercase">Curso</th>
+                  <th className="px-2 py-1 text-left text-sm font-semibold uppercase">Horario</th>
+                  <th className="px-2 py-1 text-left text-sm font-semibold uppercase">Modalidad</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -234,7 +239,7 @@ function Horarios() {
                   pagedLibres.map((curso, index) => (
                     <tr key={`CL-${curso.id}`} className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                       <td className="px-2 py-1 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">{curso.nombre_curso}</div>
+                        <div className="text-base font-semibold text-gray-900">{curso.nombre_curso}</div>
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap">
                         <div className="text-sm text-gray-700">{curso.dias}</div>
@@ -259,9 +264,10 @@ function Horarios() {
 
         {/* Columna: Cursos INFONA */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden border-l-4 border-blue-300">
-          <div className="flex items-center justify-between px-3 py-1 border-b border-gray-200 bg-gray-50 text-xs font-semibold text-blue-800">
+          <div className="h-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-600"></div>
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50 text-sm md:text-base font-semibold text-blue-800">
             <span className="inline-flex items-center gap-1">Cursos INFONA</span>
-            <span className="inline-flex px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-semibold">{cursosInfona.length}</span>
+            <span className="inline-flex px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-semibold">{cursosInfona.length}</span>
           </div>
           {/* Filtros columna INFONA */}
           <div className="px-3 py-1 flex flex-col sm:flex-row gap-2 items-stretch">
@@ -287,9 +293,9 @@ function Horarios() {
             <table className="min-w-full">
               <thead className="bg-gray-100 text-gray-800">
                 <tr>
-                  <th className="px-2 py-1 text-left text-xs font-semibold uppercase">Curso</th>
-                  <th className="px-2 py-1 text-left text-xs font-semibold uppercase">Horario</th>
-                  <th className="px-2 py-1 text-left text-xs font-semibold uppercase">Modalidad</th>
+                  <th className="px-2 py-1 text-left text-sm font-semibold uppercase">Curso</th>
+                  <th className="px-2 py-1 text-left text-sm font-semibold uppercase">Horario</th>
+                  <th className="px-2 py-1 text-left text-sm font-semibold uppercase">Modalidad</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -306,7 +312,7 @@ function Horarios() {
                   pagedInfona.map((curso, index) => (
                     <tr key={`INF-${curso.id}`} className={`hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
                       <td className="px-2 py-1 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900">{curso.nombre_curso}</div>
+                        <div className="text-base font-semibold text-gray-900">{curso.nombre_curso}</div>
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap">
                         <div className="text-sm text-gray-700">{curso.dias}</div>
@@ -362,6 +368,7 @@ function Horarios() {
       </div>
 
       {/* Resumen compacto eliminado para reducir espacios */}
+      </div>
     </section>
   );
 };

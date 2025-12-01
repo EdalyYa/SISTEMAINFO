@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { FaMicrochip } from 'react-icons/fa';
 import { 
   FileText, 
   User, 
@@ -275,7 +274,6 @@ function Reclamaciones() {
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-white to-blue-50 border border-blue-100 p-5 mb-6">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 mb-1 justify-center">
-              <FaMicrochip className="text-blue-700" />
               <h1 className="text-2xl md:text-3xl font-bold text-blue-900">Sistema de Reclamaciones</h1>
             </div>
             <p className="text-gray-700 text-sm md:text-base font-mono">Gestiona tus reclamaciones de forma rápida y eficiente</p>

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FaMicrochip } from 'react-icons/fa';
 import { API_BASE } from '../config/api';
 import { resolveAssetUrl } from '../utils/assetUrl';
 import ExcelImg from '../Imagenes/Excel.png';
@@ -73,20 +72,19 @@ function Programas() {
   const list = programas.length ? programas : programsFallback;
 
   return (
-    <div className="bg-gray-50 py-4 px-4">
+    <div className="bg-gradient-to-b from-gray-50 to-white py-4 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="relative mb-4">
-          <div className="rounded-3xl bg-blue-50 border border-blue-100 p-5 shadow-sm overflow-hidden">
+        <div className="relative mb-4 md:mb-6">
+          <div className="rounded-3xl bg-blue-50 border border-blue-100 p-6 shadow-sm overflow-hidden">
             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.12)_1px,transparent_1px)] [background-size:22px_22px] opacity-50 pointer-events-none"></div>
-            <div className="text-center px-4 py-1 relative">
+            <div className="relative text-center">
               <div className="inline-flex items-center gap-2 mb-1 justify-center">
-                <FaMicrochip className="text-blue-700" />
-                <h1 className="text-2xl md:text-3xl font-bold text-blue-900">Nuestros Programas</h1>
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Nuestros Programas</h1>
               </div>
-              <p className="text-sm md:text-base text-gray-700 max-w-2xl mx-auto font-mono">
+              <p className="text-base md:text-xl text-gray-600 max-w-3xl mx-auto">
                 Programas especializados para potenciar tu carrera profesional con cursos prácticos e instructores certificados.
               </p>
-              {error && <p className="text-red-600 mt-2 font-mono">{error}</p>}
+              {error && <p className="text-red-600 mt-2">{error}</p>}
             </div>
           </div>
         </div>
@@ -94,7 +92,7 @@ function Programas() {
         {/* Programs Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {list.map((program) => (
-            <div key={program.id} className="rounded-xl border border-blue-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition">
+            <div key={program.id} className="rounded-xl border border-blue-100 bg-white shadow-sm overflow-hidden hover:shadow-md transition-all duration-300">
               <div className="h-1 bg-gradient-to-r from-blue-700 via-cyan-600 to-indigo-700"></div>
               <div className="flex flex-col md:flex-row">
                 {/* Imagen a un costado */}
@@ -104,7 +102,7 @@ function Programas() {
                   </div>
                 ) : (
                   <div className="md:w-5/12 h-36 bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center">
-                    <FaMicrochip className="text-blue-700 text-4xl" />
+                    <span className="text-blue-700 text-sm font-semibold">INFOUNA</span>
                   </div>
                 )}
 
@@ -112,14 +110,11 @@ function Programas() {
                 <div className="md:w-7/12 p-3 flex flex-col">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="inline-block w-2 h-2 rounded-full bg-blue-600" aria-hidden="true"></span>
-                    <FaMicrochip className="text-blue-700" />
                     <h3 className="text-base font-bold text-blue-900">{program.title}</h3>
                   </div>
                   <p className="text-gray-700 mb-2 flex-grow text-sm">{program.description}</p>
                   <div className="mb-2">
-                    <span className="inline-flex px-2.5 py-1 text-[11px] font-mono font-semibold rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200">INFO-TECH</span>
                   </div>
-
                   <div className="mt-auto flex justify-between items-center">
                     <button
                       onClick={() => handleDetailsClick(program.id)}

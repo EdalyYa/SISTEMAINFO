@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaChalkboardTeacher, FaUsers, FaAward, FaHandsHelping, FaGraduationCap } from 'react-icons/fa';
+import { FaAward, FaGraduationCap } from 'react-icons/fa';
 import DirectorImg from '../Imagenes/people/Director.jpg';
 import AdministradorImg from '../Imagenes/people/Administrador.jpg';
 
@@ -24,18 +24,15 @@ function Equipo() {
   ];
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="relative mb-3">
+    <div className="bg-gradient-to-b from-gray-50 to-white">
+      <div className="relative mb-4 md:mb-6">
         <div className="mx-auto max-w-6xl">
-          <div className="relative rounded-3xl bg-blue-50 border border-blue-100 p-3 shadow-sm overflow-hidden">
+          <div className="relative rounded-3xl bg-blue-50 border border-blue-100 p-6 shadow-sm overflow-hidden">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(59,130,246,0.12)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.12)_1px,transparent_1px)] [background-size:22px_22px] opacity-50 pointer-events-none"></div>
             <div className="relative text-center">
-              <div className="inline-flex items-center gap-2 px-2 py-1 bg-blue-50 text-blue-700 rounded-full ring-1 ring-blue-200 mb-1 font-mono">
-                <FaUsers className="w-4 h-4" />
-                <span className="text-xs font-semibold">INFO-TEAM</span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-bold mb-1 text-blue-900">Nuestro Equipo</h1>
-              <p className="text-xs md:text-sm text-gray-700 max-w-lg mx-auto font-mono">Profesionales comprometidos con la excelencia educativa</p>
-              <div className="mt-1 text-xs text-blue-700 font-mono">{teamMembers.length} miembros activos</div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-1 text-gray-900">Nuestro Equipo</h1>
+              <p className="text-base md:text-xl text-gray-600 max-w-3xl mx-auto">Profesionales comprometidos con la excelencia educativa</p>
+              <div className="mt-1 text-sm md:text-base text-blue-700 font-medium">{teamMembers.length} miembros activos</div>
             </div>
           </div>
         </div>
@@ -45,7 +42,8 @@ function Equipo() {
         {/* Team Members - Compact Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {teamMembers.map((member, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-sm border border-blue-100 overflow-hidden hover:shadow-md transition-all duration-300">
+            <div key={index} className="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden hover:shadow-md transition-all duration-300">
+              <div className="h-1 bg-indigo-500"></div>
               <div className="p-3">
                 <div className="flex items-start space-x-4">
                   {/* Photo Section */}
@@ -86,55 +84,31 @@ function Equipo() {
           ))}
         </div>
 
-        {/* Compact Values Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+        {/* Principios Institucionales */}
+        <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-5">
           <div className="text-center mb-2">
             <div className="inline-flex items-center justify-center gap-2 mb-1">
               <span className="inline-block w-2 h-2 rounded-full bg-blue-600" aria-hidden="true"></span>
-              <h2 className="text-xl font-bold text-blue-900">Nuestros Principios</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Principios Institucionales</h2>
             </div>
-            <p className="text-gray-600 text-xs font-mono">Valores que guían nuestro compromiso educativo</p>
+            <p className="text-gray-600 text-sm">Valores que guían nuestro compromiso educativo</p>
           </div>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-            <div className="text-center p-2.5">
-              <div className="inline-flex p-2 bg-blue-50 rounded-lg mb-2">
-                <FaChalkboardTeacher className="w-5 h-5 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Docencia de Calidad</h3>
-              <p className="text-gray-600 text-xs">
-                Educación de excelencia
-              </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="border rounded-lg p-4">
+              <h3 className="text-base font-semibold text-blue-900 mb-1">Académicos</h3>
+              <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                <li>Docencia de calidad y evaluación continua</li>
+                <li>Excelencia académica y estándares elevados</li>
+                <li>Actualización y mejora permanente</li>
+              </ul>
             </div>
-            
-            <div className="text-center p-2.5">
-              <div className="inline-flex p-2 bg-green-50 rounded-lg mb-2">
-                <FaUsers className="w-5 h-5 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Trabajo Colaborativo</h3>
-              <p className="text-gray-600 text-xs">
-                Ambiente de cooperación
-              </p>
-            </div>
-            
-            <div className="text-center p-2.5">
-              <div className="inline-flex p-2 bg-yellow-50 rounded-lg mb-2">
-                <FaAward className="w-5 h-5 text-yellow-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Excelencia Académica</h3>
-              <p className="text-gray-600 text-xs">
-                Altos estándares educativos
-              </p>
-            </div>
-            
-            <div className="text-center p-2.5">
-              <div className="inline-flex p-2 bg-purple-50 rounded-lg mb-2">
-                <FaHandsHelping className="w-5 h-5 text-purple-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Apoyo Integral</h3>
-              <p className="text-gray-600 text-xs">
-                Desarrollo estudiantil
-              </p>
+            <div className="border rounded-lg p-4">
+              <h3 className="text-base font-semibold text-blue-900 mb-1">Institucionales</h3>
+              <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                <li>Trabajo colaborativo y servicio</li>
+                <li>Apoyo integral al estudiante</li>
+                <li>Responsabilidad y ética institucional</li>
+              </ul>
             </div>
           </div>
         </div>
