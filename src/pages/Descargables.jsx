@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaFileAlt, FaExternalLinkAlt, FaUniversity } from 'react-icons/fa';
 import { Card, CardHeader, CardTitle, CardContent, Button } from '../components/ui';
 import { API_BASE } from '../config/api';
 
 const ASSET_BASE = API_BASE.replace('/api', '');
 
-const descargables = [
+const descargablesDefault = [
   {
     titulo: 'Guía de Inscripción',
     descripcion: 'Pasos y requisitos para inscribirte a nuestros cursos y programas.',
@@ -24,6 +24,62 @@ const descargables = [
 ];
 
 function DescargablesPage() {
+  const [items, setItems] = useState(descargablesDefault.map(d => ({ ...d, available: null })));
+  const linkify = (text) => {
+    const t = String(text || '');
+    const re = /((https?:\/\/|www\.)[^\s]+)/gi;
+    const out = [];
+    let last = 0;
+    for (const m of t.matchAll(re)) {
+      const start = m.index || 0;
+      const url = m[0];
+      if (start > last) out.push(t.slice(last, start));
+      const href = url.startsWith('www.') ? `https://${url}` : url;
+      out.push(
+        <a key={`l-${start}`} href={href} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">
+          {url}
+        </a>
+      );
+      last = start + url.length;
+    }
+    if (last < t.length) out.push(t.slice(last));
+    return out;
+  };
+
+  useEffect(() => {
+    const check = async (url) => {
+      if (!url || url === '#') return false;
+      try {
+        const res = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
+        return !!res.ok;
+      } catch (_) {
+        return false;
+      }
+    };
+    (async () => {
+      const results = await Promise.all(descargablesDefault.map(d => check(d.url)));
+      setItems(descargablesDefault.map((d, i) => ({ ...d, available: results[i] })));
+    })();
+  }, []);
+
+  const handleOpen = async (item, idx) => {
+    if (item.url === '#' || item.available === false) return;
+    try {
+      const res = await fetch(item.url, { method: 'HEAD', cache: 'no-cache' });
+      if (res.ok) {
+        window.open(item.url, '_blank', 'noopener');
+      } else {
+        const next = [...items];
+        next[idx] = { ...item, available: false };
+        setItems(next);
+      }
+    } catch (_) {
+      const next = [...items];
+      next[idx] = { ...item, available: false };
+      setItems(next);
+    }
+  };
+
   return (
     <div className="bg-gradient-to-b from-gray-50 to-white">
       <div className="relative mb-4 md:mb-6">
@@ -47,7 +103,7 @@ function DescargablesPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          {descargables.map((item, i) => (
+          {items.map((item, i) => (
             <Card key={i} className="rounded-xl hover:shadow-md transition">
               <div className="h-1 bg-gradient-to-r from-blue-700 via-cyan-600 to-indigo-700"></div>
               <CardHeader className="flex items-center gap-2">
@@ -55,15 +111,15 @@ function DescargablesPage() {
                 <CardTitle className="text-blue-900 text-lg md:text-xl font-bold">{item.titulo}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm md:text-base text-gray-700 leading-relaxed">{item.descripcion}</p>
+                <p className="text-sm md:text-base text-gray-700 leading-relaxed">{linkify(item.descripcion)}</p>
                 <Button
                   variant="primary"
                   size="sm"
                   rightIcon={FaExternalLinkAlt}
-                  disabled={item.url === '#'}
-                  onClick={() => { if (item.url !== '#') window.open(item.url, '_blank', 'noopener'); }}
+                  disabled={item.url === '#' || item.available === false}
+                  onClick={() => handleOpen(item, i)}
                 >
-                  {item.url === '#' ? 'Próximamente' : 'Descargar PDF'}
+                  {item.url === '#' || item.available === false ? 'Próximamente' : 'Descargar PDF'}
                 </Button>
               </CardContent>
             </Card>

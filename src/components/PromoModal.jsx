@@ -225,6 +225,26 @@ const PromoModal = ({ isOpen, onClose }) => {
       default: return tipo ? tipo.toUpperCase() : 'PROMOCIÓN';
     }
   };
+  const linkifyText = (text) => {
+    const t = String(text || '');
+    const re = /((https?:\/\/|www\.)[^\s]+)/gi;
+    const nodes = [];
+    let last = 0;
+    for (const m of t.matchAll(re)) {
+      const start = m.index || 0;
+      const url = m[0];
+      if (start > last) nodes.push(t.slice(last, start));
+      const href = url.startsWith('www.') ? `https://${url}` : url;
+      nodes.push(
+        <a key={`ln-${start}`} href={href} target="_blank" rel="noopener noreferrer" className="underline text-blue-200 md:text-blue-700">
+          {url}
+        </a>
+      );
+      last = start + url.length;
+    }
+    if (last < t.length) nodes.push(t.slice(last));
+    return nodes;
+  };
   // Mapeo de estado del cronograma a estilos y etiquetas
   const getCronoEstado = (estado) => {
     const key = String(estado || '').toLowerCase();
@@ -666,7 +686,7 @@ const PromoModal = ({ isOpen, onClose }) => {
                               <div className="absolute left-0 right-0 bottom-3 mx-3 md:mx-6 flex flex-col md:flex-row md:items-center gap-3 p-3 md:p-4 bg-black/40 text-white rounded-lg backdrop-blur-sm">
                                 {currentPromo?.descripcion && (
                                   <p className="flex-1 text-sm md:text-base leading-relaxed">
-                                    {String(currentPromo.descripcion).trim()}
+                                    {linkifyText(String(currentPromo.descripcion).trim())}
                                   </p>
                                 )}
                                 {currentPromo?.url_accion && (
@@ -741,7 +761,7 @@ const PromoModal = ({ isOpen, onClose }) => {
                       <div className="text-gray-800">
                         {lines.length > 0 ? (
                           lines.map((line, i) => (
-                            <p key={i} className="mb-3 leading-relaxed">{line.trim()}</p>
+                            <p key={i} className="mb-3 leading-relaxed">{linkifyText(line.trim())}</p>
                           ))
                         ) : (
                           <p className="text-gray-500">Sin descripción disponible.</p>
